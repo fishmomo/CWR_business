@@ -1,0 +1,55 @@
+{
+  "task_id": "demo-run",
+  "data_source": {
+    "name": "demo",
+    "root": "inputs/demo.nc"
+  },
+  "time_slices": [
+    {
+      "scale": "year",
+      "year": 2025
+    }
+  ],
+  "region_spec": {
+    "kind": "bbox",
+    "payload": {
+      "min_lon": 100.0,
+      "max_lon": 110.0,
+      "min_lat": 30.0,
+      "max_lat": 35.0
+    }
+  },
+  "variables": [
+    "temp"
+  ],
+  "operators": [
+    "mean"
+  ],
+  "outputs": [
+    {
+      "kind": "region_table",
+      "name": "temp_year_mean"
+    },
+    {
+      "kind": "report_inputs",
+      "name": "report_inputs"
+    }
+  ],
+  "workflow_steps": [
+    "prepare",
+    "mask",
+    "subset",
+    "transform",
+    "stat",
+    "plot",
+    "export",
+    "report_inputs"
+  ],
+  "reuse_policy": {
+    "mask": true,
+    "subset": true,
+    "stat": true,
+    "plot": true
+  },
+  "output_root": "outputs/demo-run"
+}
