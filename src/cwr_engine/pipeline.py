@@ -37,6 +37,7 @@ def run_task(task_path: Path, output_root: Path | None = None) -> Path:
             break
         runner = STEP_RUNNERS[step_name]
         context = runner(context)
+    context["runtime"]["stat_results"] = context.get("stat_results", [])
     return write_report_inputs(
         task=task,
         output_root=root,

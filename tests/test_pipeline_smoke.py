@@ -1,4 +1,5 @@
 import json
+import csv
 from pathlib import Path
 
 from cwr_engine import __version__
@@ -50,6 +51,18 @@ def test_pipeline_emits_csv_and_png_artifacts(tmp_path: Path):
     kinds = {item["kind"] for item in payload["artifacts"]}
     assert "region_table" in kinds
     assert "figure_timeseries" in kinds
+
+
+def test_pipeline_exports_computed_mean_value(tmp_path: Path):
+    report_path = run_task(
+        task_path=Path("tests/fixtures/minimal_task.json"),
+        output_root=tmp_path,
+    )
+    payload = json.loads(report_path.read_text(encoding="utf-8"))
+    csv_path = next(Path(item["path"]) for item in payload["artifacts"] if item["kind"] == "region_table")
+    with csv_path.open("r", encoding="utf-8", newline="") as handle:
+        rows = list(csv.reader(handle))
+    assert rows[1] == ["temp", "mean", "11.50"]
 
 
 def test_cli_returns_zero(tmp_path: Path):

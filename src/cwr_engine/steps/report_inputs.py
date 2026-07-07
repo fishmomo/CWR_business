@@ -29,6 +29,7 @@ def write_report_inputs(task, output_root: Path, artifacts: list[dict] | None = 
             "executed_steps": [],
             "used_cache": [],
         },
+        "stats": runtime.get("stat_results", []) if runtime else [],
     }
     target.write_text(json.dumps(payload, indent=2, ensure_ascii=False), encoding="utf-8")
     return target
