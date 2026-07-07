@@ -9,6 +9,9 @@ description = "Unified computation engine for CWR workflows"
 requires-python = ">=3.9"
 dependencies = []
 
+[project.scripts]
+cwr-engine = "cwr_engine.cli:main"
+
 [tool.setuptools]
 package-dir = {"" = "src"}
 

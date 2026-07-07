@@ -2,6 +2,7 @@ import json
 from pathlib import Path
 
 from cwr_engine import __version__
+from cwr_engine.cli import main
 from cwr_engine.pipeline import run_task
 
 
@@ -38,3 +39,26 @@ def test_report_inputs_contains_contract_fields(tmp_path: Path):
         "plot",
         "export",
     ]
+
+
+def test_pipeline_emits_csv_and_png_artifacts(tmp_path: Path):
+    report_path = run_task(
+        task_path=Path("tests/fixtures/minimal_task.json"),
+        output_root=tmp_path,
+    )
+    payload = json.loads(report_path.read_text(encoding="utf-8"))
+    kinds = {item["kind"] for item in payload["artifacts"]}
+    assert "region_table" in kinds
+    assert "figure_timeseries" in kinds
+
+
+def test_cli_returns_zero(tmp_path: Path):
+    code = main(
+        [
+            "--task",
+            "tests/fixtures/minimal_task.json",
+            "--output-root",
+            str(tmp_path),
+        ]
+    )
+    assert code == 0

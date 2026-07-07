@@ -31,6 +31,10 @@
       "name": "temp_year_mean"
     },
     {
+      "kind": "figure_timeseries",
+      "name": "temp_series"
+    },
+    {
       "kind": "report_inputs",
       "name": "report_inputs"
     }
