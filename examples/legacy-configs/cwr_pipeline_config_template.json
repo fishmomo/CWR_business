@@ -1,0 +1,46 @@
+{
+  "active_region": "region_code",
+  "data_source": {
+    "name": "NCEP",
+    "root": "H:\\result_china\\NCEP"
+  },
+  "data_period": {
+    "start_year": 2000,
+    "end_year": 2025
+  },
+  "report_period": {
+    "start_year": 2021,
+    "end_year": 2025,
+    "single_start_year": 2025,
+    "single_end_year": 2025
+  },
+  "workflow": {
+    "reuse_existing_mask": true,
+    "reuse_existing_csv": true
+  },
+  "regions": {
+    "region_code": {
+      "address": "region_code",
+      "address_CN": "区域中文名",
+      "shp_path": "H:\\BY_Weather\\业务名\\shp\\region_code.shp",
+      "grid_resolution": 1,
+      "mask_nc_path": "H:\\BY_Weather\\业务名\\mask\\region_code.nc",
+      "mask_png_path": "H:\\BY_Weather\\业务名\\mask\\region_code.png",
+      "output_root": "C:\\Users\\YUJIE\\Documents\\CWR_business\\outputs\\region_code_2021_2025",
+      "csv_year_path": "H:\\BY_Weather\\业务名\\result\\region_code\\region_code_NCEP_00to25_Y_client.csv",
+      "csv_month_path": "H:\\BY_Weather\\业务名\\result\\region_code\\region_code_NCEP_00to25_M_client.csv"
+    }
+  },
+  "templates": {
+    "single_year": "H:\\BY_Weather\\routine_bussiness\\some_region_report\\template\\Simple-Year_Evaluation_Report-xizang-cm.docx",
+    "multi_year": "H:\\BY_Weather\\routine_bussiness\\some_region_report\\template\\Multi-Year_Evaluation_Report-xizang-cm.docx"
+  },
+  "trace_layout": {
+    "business_input": "H:\\BY_Weather\\业务名",
+    "shp_dir": "H:\\BY_Weather\\业务名\\shp",
+    "mask_dir": "H:\\BY_Weather\\业务名\\mask",
+    "reusable_csv_dir": "H:\\BY_Weather\\业务名\\result\\region_code",
+    "report_output_dir": "C:\\Users\\YUJIE\\Documents\\CWR_business\\outputs\\region_code_2021_2025",
+    "manifest": "report_output_dir\\pipeline_run_manifest.json"
+  }
+}

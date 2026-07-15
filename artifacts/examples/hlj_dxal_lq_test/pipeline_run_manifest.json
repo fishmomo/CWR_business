@@ -1,0 +1,81 @@
+{
+  "created_at": "2026-07-15T11:07:15",
+  "config_path": "C:\\Users\\YUJIE\\Documents\\CWR_business\\hlj_dxal_lq_test_pipeline_config.json",
+  "active_region": "hlj-dxal-lq",
+  "steps": [
+    "mask",
+    "csv",
+    "draw-yearly-single",
+    "draw-yearly-multi",
+    "draw-single",
+    "draw-multi",
+    "report-single",
+    "report-multi"
+  ],
+  "step_status": [],
+  "self_check": [
+    {
+      "key": "shp_path",
+      "path": "C:\\Users\\YUJIE\\Documents\\CWR_business\\inputs\\黑龙江省大小兴安岭林区矢量\\黑龙江省大小兴安岭林区矢量.shp",
+      "status": "OK"
+    },
+    {
+      "key": "mask_nc_path",
+      "path": "C:\\Users\\YUJIE\\Documents\\CWR_business\\outputs\\hlj_dxal_lq_test\\mask\\hlj-dxal-lq.nc",
+      "status": "OK"
+    },
+    {
+      "key": "mask_png_path",
+      "path": "C:\\Users\\YUJIE\\Documents\\CWR_business\\outputs\\hlj_dxal_lq_test\\mask\\hlj-dxal-lq.png",
+      "status": "OK"
+    },
+    {
+      "key": "csv_year_path",
+      "path": "C:\\Users\\YUJIE\\Documents\\CWR_business\\outputs\\hlj_dxal_lq_test\\csv\\hlj-dxal-lq_NCEP_00to25_Y.csv",
+      "status": "OK"
+    },
+    {
+      "key": "csv_month_path",
+      "path": "C:\\Users\\YUJIE\\Documents\\CWR_business\\outputs\\hlj_dxal_lq_test\\csv\\hlj-dxal-lq_NCEP_00to25_M.csv",
+      "status": "OK"
+    },
+    {
+      "key": "output_root",
+      "path": "C:\\Users\\YUJIE\\Documents\\CWR_business\\outputs\\hlj_dxal_lq_test",
+      "status": "OK"
+    },
+    {
+      "key": "mask_filename_rule",
+      "path": "C:\\Users\\YUJIE\\Documents\\CWR_business\\outputs\\hlj_dxal_lq_test\\mask\\hlj-dxal-lq.nc",
+      "status": "OK"
+    }
+  ],
+  "workflow": {
+    "reuse_existing_mask": true,
+    "reuse_existing_csv": true
+  },
+  "data_source": {
+    "name": "NCEP",
+    "root": "H:\\result_china\\NCEP"
+  },
+  "data_period": {
+    "start_year": 2000,
+    "end_year": 2025
+  },
+  "report_period": {
+    "start_year": 2000,
+    "end_year": 2025,
+    "single_start_year": 2025,
+    "single_end_year": 2025
+  },
+  "region": {
+    "address": "hlj-dxal-lq",
+    "address_CN": "大小兴安岭",
+    "shp_path": "C:\\Users\\YUJIE\\Documents\\CWR_business\\inputs\\黑龙江省大小兴安岭林区矢量\\黑龙江省大小兴安岭林区矢量.shp",
+    "mask_nc_path": "C:\\Users\\YUJIE\\Documents\\CWR_business\\outputs\\hlj_dxal_lq_test\\mask\\hlj-dxal-lq.nc",
+    "mask_png_path": "C:\\Users\\YUJIE\\Documents\\CWR_business\\outputs\\hlj_dxal_lq_test\\mask\\hlj-dxal-lq.png",
+    "csv_year_path": "C:\\Users\\YUJIE\\Documents\\CWR_business\\outputs\\hlj_dxal_lq_test\\csv\\hlj-dxal-lq_NCEP_00to25_Y.csv",
+    "csv_month_path": "C:\\Users\\YUJIE\\Documents\\CWR_business\\outputs\\hlj_dxal_lq_test\\csv\\hlj-dxal-lq_NCEP_00to25_M.csv",
+    "output_root": "C:\\Users\\YUJIE\\Documents\\CWR_business\\outputs\\hlj_dxal_lq_test"
+  }
+}

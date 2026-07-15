@@ -1,0 +1,38 @@
+{
+  "active_region": "hlj-dxal-lq",
+  "data_source": {
+    "name": "NCEP",
+    "root": "H:\\result_china\\NCEP"
+  },
+  "data_period": {
+    "start_year": 2000,
+    "end_year": 2025
+  },
+  "report_period": {
+    "start_year": 2000,
+    "end_year": 2025,
+    "single_start_year": 2025,
+    "single_end_year": 2025
+  },
+  "workflow": {
+    "reuse_existing_mask": true,
+    "reuse_existing_csv": true
+  },
+  "regions": {
+    "hlj-dxal-lq": {
+      "address": "hlj-dxal-lq",
+      "address_CN": "大小兴安岭",
+      "shp_path": "C:\\Users\\YUJIE\\Documents\\CWR_business\\inputs\\黑龙江省大小兴安岭林区矢量\\黑龙江省大小兴安岭林区矢量.shp",
+      "grid_resolution": 1,
+      "mask_nc_path": "C:\\Users\\YUJIE\\Documents\\CWR_business\\outputs\\hlj_dxal_lq_test\\mask\\hlj-dxal-lq.nc",
+      "mask_png_path": "C:\\Users\\YUJIE\\Documents\\CWR_business\\outputs\\hlj_dxal_lq_test\\mask\\hlj-dxal-lq.png",
+      "output_root": "C:\\Users\\YUJIE\\Documents\\CWR_business\\outputs\\hlj_dxal_lq_test",
+      "csv_year_path": "C:\\Users\\YUJIE\\Documents\\CWR_business\\outputs\\hlj_dxal_lq_test\\csv\\hlj-dxal-lq_NCEP_00to25_Y.csv",
+      "csv_month_path": "C:\\Users\\YUJIE\\Documents\\CWR_business\\outputs\\hlj_dxal_lq_test\\csv\\hlj-dxal-lq_NCEP_00to25_M.csv"
+    }
+  },
+  "templates": {
+    "single_year": "H:\\BY_Weather\\routine_bussiness\\some_region_report\\template\\Simple-Year_Evaluation_Report-xizang-cm.docx",
+    "multi_year": "H:\\BY_Weather\\routine_bussiness\\some_region_report\\template\\Multi-Year_Evaluation_Report-xizang-cm.docx"
+  }
+}

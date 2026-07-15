@@ -1,0 +1,12 @@
+source=C:\Users\YUJIE\Documents\CWR_business\outputs\hlj_dxal_lq_test\csv\hlj-dxal-lq_NCEP_00to25_M.csv
+year_range=2000-2025
+row_count=52
+expected_row_count=52
+dxy=222889241759.9292
+spring_months=03,04,05
+autumn_months=09,10,11
+quantity_units=GMv/GMh/Cvh/CWR/Ps:mm; CEv/PEh:%; RTh:hour
+aggregation=water quantities summed over season then divided by dxy; CEv=CWR/GMv*100; PEh=Ps/GMh*100; RTh=mean(aveMh)/(sum(Ps)/(season_days*24))
+missing_values=0
+range_rules=GMv_mm[0,+inf]; GMh_mm[0,+inf]; Cvh_mm[0,+inf]; CWR_mm[0,+inf]; Ps_mm[0,+inf]; CEv_percent[0,100]; PEh_percent[0,100]; RTh_hour[0,300]
+range_check=OK

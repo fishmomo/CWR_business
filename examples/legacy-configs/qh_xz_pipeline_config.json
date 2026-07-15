@@ -1,0 +1,34 @@
+{
+  "active_region": "qh-xz",
+  "data_source": {
+    "name": "CRA40",
+    "root": "H:\\YeWu\\cm\\CRA40_trans1P00"
+  },
+  "data_period": {
+    "start_year": 2000,
+    "end_year": 2025
+  },
+  "report_period": {
+    "start_year": 2000,
+    "end_year": 2025,
+    "single_start_year": 2025,
+    "single_end_year": 2025
+  },
+  "regions": {
+    "qh-xz": {
+      "address": "qh-xz",
+      "address_CN": "青海西藏两地",
+      "shp_path": "H:\\我的业务\\CM\\2026-06\\shp\\merged_qhxz.shp",
+      "grid_resolution": 1,
+      "mask_nc_path": "C:\\Users\\YUJIE\\Documents\\CWR_business\\outputs\\qh-xz\\mask\\qh-xz.nc",
+      "mask_png_path": "C:\\Users\\YUJIE\\Documents\\CWR_business\\outputs\\qh-xz\\mask\\qh-xz.png",
+      "output_root": "C:\\Users\\YUJIE\\Documents\\CWR_business\\outputs\\qh-xz",
+      "csv_year_path": "C:\\Users\\YUJIE\\Documents\\CWR_business\\outputs\\qh-xz\\csv\\qhxz_00to25_Y.csv",
+      "csv_month_path": "C:\\Users\\YUJIE\\Documents\\CWR_business\\outputs\\qh-xz\\csv\\qhxz_00to25_M.csv"
+    }
+  },
+  "templates": {
+    "single_year": "H:\\BY_Weather\\routine_bussiness\\some_region_report\\template\\Simple-Year_Evaluation_Report-xizang-cm.docx",
+    "multi_year": "H:\\BY_Weather\\routine_bussiness\\some_region_report\\template\\Multi-Year_Evaluation_Report-xizang-cm.docx"
+  }
+}
