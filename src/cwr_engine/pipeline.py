@@ -6,6 +6,7 @@ from cwr_engine.task_schema import load_task
 
 
 SUPPORTED_OUTPUT_KINDS = {"region_table", "figure_timeseries", "grid_nc", "report_inputs"}
+SUPPORTED_OPERATORS = {"mean"}
 
 
 STEP_RUNNERS = {
@@ -25,9 +26,16 @@ def _validate_output_requests(task) -> None:
             raise ValueError(f"Unsupported output kind: {request.kind}")
 
 
+def _validate_operators(task) -> None:
+    for operator in task.operators:
+        if operator not in SUPPORTED_OPERATORS:
+            raise ValueError(f"Unsupported operator: {operator}")
+
+
 def run_task(task_path: Path, output_root: Path | None = None) -> Path:
     task = load_task(task_path)
     _validate_output_requests(task)
+    _validate_operators(task)
     root = output_root or Path(task.output_root)
     root.mkdir(parents=True, exist_ok=True)
     context = {

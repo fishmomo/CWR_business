@@ -1,6 +1,8 @@
 import csv
 from pathlib import Path
 
+import xarray as xr
+
 
 def _requests_for(context: dict, kind: str):
     return [request for request in context["task"].outputs if request.kind == kind]
@@ -24,7 +26,13 @@ def run(context: dict) -> dict:
         )
     for request in _requests_for(context, "grid_nc"):
         target = output_root / "export" / f"{request.name}.nc"
-        context["grid_mean_data"].to_dataset(name=context["task"].variables[0]).to_netcdf(target, engine="scipy")
+        grid_dataset = xr.Dataset(
+            {
+                variable: result["grid_mean_data"]
+                for variable, result in context["variable_results"].items()
+            }
+        )
+        grid_dataset.to_netcdf(target, engine="scipy")
         context["artifacts"].append(
             {
                 "kind": "grid_nc",

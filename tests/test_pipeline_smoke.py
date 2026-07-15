@@ -37,6 +37,42 @@ def _write_demo_task(tmp_path: Path, outputs: list[dict], workflow_steps: list[s
     return task_path
 
 
+def _write_two_variable_task(tmp_path: Path, outputs: list[dict], workflow_steps: list[str], operators: list[str] | None = None) -> Path:
+    xr.Dataset(
+        data_vars={
+            "temp": (("time", "lat", "lon"), np.array([[[1.0, 2.0], [3.0, 4.0]]])),
+            "precip": (("time", "lat", "lon"), np.array([[[10.0, 20.0], [30.0, 40.0]]])),
+        },
+        coords={
+            "time": np.array(["2025-01-01"], dtype="datetime64[ns]"),
+            "lat": [30.0, 31.0],
+            "lon": [100.0, 101.0],
+        },
+    ).to_netcdf(tmp_path / "two_variables.nc", engine="scipy")
+    task_path = tmp_path / "two_variables_task.json"
+    task_path.write_text(
+        json.dumps(
+            {
+                "task_id": "two-variables",
+                "data_source": {"name": "nc", "root": "two_variables.nc", "engine": "scipy"},
+                "time_slices": [{"scale": "year", "year": 2025}],
+                "region_spec": {
+                    "kind": "bbox",
+                    "payload": {"min_lon": 100.0, "max_lon": 101.0, "min_lat": 30.0, "max_lat": 31.0},
+                },
+                "variables": ["temp", "precip"],
+                "operators": operators or ["mean"],
+                "outputs": outputs,
+                "workflow_steps": workflow_steps,
+                "reuse_policy": {},
+                "output_root": "artifacts/runs/two-variables",
+            }
+        ),
+        encoding="utf-8",
+    )
+    return task_path
+
+
 def test_package_imports():
     assert __version__ == "0.1.0"
 
@@ -160,7 +196,7 @@ def test_figure_only_task_creates_only_requested_figure(tmp_path: Path):
         workflow_steps=["prepare", "mask", "subset", "transform", "plot"],
     )
     root = run_task(task_path, tmp_path / "result")
-    assert (root / "plot" / "annual_series.png").exists()
+    assert (root / "plot" / "annual_series_temp.png").exists()
     assert not (root / "export").exists()
     assert not (root / "report_inputs").exists()
 
@@ -178,6 +214,53 @@ def test_report_inputs_uses_requested_name_and_indexes_created_artifacts(tmp_pat
     payload = json.loads(report_path.read_text(encoding="utf-8"))
     assert report_path.name == "annual_report_inputs.json"
     assert [item["kind"] for item in payload["artifacts"]] == ["region_table"]
+
+
+def test_multiple_variables_export_one_stat_row_per_variable(tmp_path: Path):
+    task_path = _write_two_variable_task(
+        tmp_path,
+        outputs=[{"kind": "region_table", "name": "annual_table"}],
+        workflow_steps=["prepare", "mask", "subset", "transform", "stat", "export"],
+    )
+    root = run_task(task_path, tmp_path / "result")
+    with (root / "export" / "annual_table.csv").open("r", encoding="utf-8", newline="") as handle:
+        rows = list(csv.reader(handle))
+    assert rows[1] == ["2025", "temp", "mean", "2.50"]
+    assert rows[2] == ["2025", "precip", "mean", "25.00"]
+
+
+def test_unsupported_operator_fails_before_creating_artifacts(tmp_path: Path):
+    task_path = _write_two_variable_task(
+        tmp_path,
+        outputs=[{"kind": "region_table", "name": "annual_table"}],
+        workflow_steps=["prepare"],
+        operators=["max"],
+    )
+    with pytest.raises(ValueError, match="Unsupported operator: max"):
+        run_task(task_path, tmp_path / "result")
+    assert not (tmp_path / "result").exists()
+
+
+def test_multiple_variables_grid_nc_contains_all_requested_variables(tmp_path: Path):
+    task_path = _write_two_variable_task(
+        tmp_path,
+        outputs=[{"kind": "grid_nc", "name": "annual_grids"}],
+        workflow_steps=["prepare", "mask", "subset", "transform", "export"],
+    )
+    root = run_task(task_path, tmp_path / "result")
+    dataset = xr.load_dataset(root / "export" / "annual_grids.nc", engine="scipy")
+    assert set(dataset.data_vars) == {"temp", "precip"}
+
+
+def test_multiple_variables_figure_request_creates_one_figure_per_variable(tmp_path: Path):
+    task_path = _write_two_variable_task(
+        tmp_path,
+        outputs=[{"kind": "figure_timeseries", "name": "annual_series"}],
+        workflow_steps=["prepare", "mask", "subset", "transform", "plot"],
+    )
+    root = run_task(task_path, tmp_path / "result")
+    assert (root / "plot" / "annual_series_temp.png").exists()
+    assert (root / "plot" / "annual_series_precip.png").exists()
 
 
 def test_pipeline_loads_real_netcdf_task(tmp_path: Path):
