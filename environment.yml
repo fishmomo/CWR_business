@@ -1,0 +1,13 @@
+name: cwr_py312
+channels:
+  - conda-forge
+dependencies:
+  - python=3.12
+  - matplotlib>=3.8
+  - numpy>=1.26
+  - pyproj>=3.6
+  - pyshp>=2.3
+  - pytest>=8.0
+  - scipy>=1.11
+  - shapely>=2.0
+  - xarray>=2024.1

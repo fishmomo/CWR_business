@@ -6,8 +6,19 @@ build-backend = "setuptools.build_meta"
 name = "cwr-engine"
 version = "0.1.0"
 description = "Unified computation engine for CWR workflows"
-requires-python = ">=3.9"
-dependencies = []
+requires-python = ">=3.12"
+dependencies = [
+    "matplotlib>=3.8",
+    "numpy>=1.26",
+    "pyproj>=3.6",
+    "pyshp>=2.3",
+    "scipy>=1.11",
+    "shapely>=2.0",
+    "xarray>=2024.1",
+]
+
+[project.optional-dependencies]
+test = ["pytest>=8.0"]
 
 [project.scripts]
 cwr-engine = "cwr_engine.cli:main"
