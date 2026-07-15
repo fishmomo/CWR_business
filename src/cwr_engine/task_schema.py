@@ -24,6 +24,6 @@ def load_task(path: Path) -> EngineTask:
 
 
 def _load_time_slice(payload: dict) -> TimeSlice:
-    if payload["scale"] == "year":
+    if payload["scale"] in {"year", "month", "day"}:
         return normalize_time_slice(payload)
     return TimeSlice(**payload)

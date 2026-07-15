@@ -24,6 +24,7 @@ def run_task(task_path: Path, output_root: Path | None = None) -> Path:
         (root / name).mkdir(parents=True, exist_ok=True)
     context = {
         "task": task,
+        "task_path": task_path,
         "output_root": root,
         "artifacts": [],
         "runtime": {

@@ -1,13 +1,22 @@
 import numpy as np
 import xarray as xr
+from pathlib import Path
 
 
 def run(context: dict) -> dict:
     context["runtime"]["executed_steps"].append("prepare")
     task = context["task"]
-    if task.data_source["name"] != "demo":
-        raise ValueError(f"Unsupported data source for current bootstrap engine: {task.data_source['name']}")
+    source_name = task.data_source["name"]
+    if source_name == "demo":
+        context["prepared_dataset"] = _build_demo_dataset()
+        return context
+    if source_name in {"nc", "netcdf"}:
+        context["prepared_dataset"] = _load_netcdf_dataset(context)
+        return context
+    raise ValueError(f"Unsupported data source for current bootstrap engine: {source_name}")
 
+
+def _build_demo_dataset() -> xr.Dataset:
     times = np.array([f"2025-{month:02d}-01" for month in range(1, 13)], dtype="datetime64[ns]")
     lats = np.array([30.0, 31.0, 32.0, 33.0, 34.0, 35.0])
     lons = np.array([100.0, 102.0, 104.0, 106.0, 108.0, 110.0])
@@ -28,5 +37,21 @@ def run(context: dict) -> dict:
         },
         attrs={"source_name": "demo"},
     )
-    context["prepared_dataset"] = dataset
-    return context
+    return dataset
+
+
+def _load_netcdf_dataset(context: dict) -> xr.Dataset:
+    task = context["task"]
+    source_root = task.data_source["root"]
+    dataset_path = _resolve_data_source_path(source_root, context["task_path"])
+    engine = task.data_source.get("engine")
+    if engine:
+        return xr.load_dataset(dataset_path, engine=engine)
+    return xr.load_dataset(dataset_path)
+
+
+def _resolve_data_source_path(source_root: str, task_path: Path) -> Path:
+    path = Path(source_root)
+    if path.is_absolute():
+        return path
+    return (task_path.parent / path).resolve()

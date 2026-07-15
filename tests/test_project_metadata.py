@@ -22,3 +22,10 @@ def test_versioned_samples_use_standard_locations():
     assert (ROOT / "examples" / "legacy-configs").is_dir()
     assert not (ROOT / "inputs").exists()
     assert not (ROOT / "outputs").exists()
+
+
+def test_business_scripts_use_the_organized_example_artifacts():
+    for name in ["calc_dxal_spring_autumn.py", "fix_dxal_csv_datasource.py"]:
+        source = (ROOT / "scripts" / name).read_text(encoding="utf-8")
+        assert "CWR_business\\outputs" not in source
+        assert "artifacts" in source

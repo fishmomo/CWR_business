@@ -8,9 +8,9 @@ def run(context: dict) -> dict:
     target = output_root / "export" / "region_table.csv"
     with target.open("w", encoding="utf-8", newline="") as handle:
         writer = csv.writer(handle)
-        writer.writerow(["variable", "operator", "value"])
+        writer.writerow(["label", "variable", "operator", "value"])
         for row in context["stat_results"]:
-            writer.writerow([row["variable"], row["operator"], f"{row['value']:.2f}"])
+            writer.writerow([row["label"], row["variable"], row["operator"], f"{row['value']:.2f}"])
     context["artifacts"].append(
         {
             "kind": "region_table",

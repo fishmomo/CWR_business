@@ -1,5 +1,7 @@
 __pycache__/
 .pytest_cache/
+.test-tmp*/
+*.egg-info/
 .worktrees/
 
 # Regenerated pipeline runs; curated examples live in artifacts/examples/.

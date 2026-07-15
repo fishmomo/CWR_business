@@ -13,6 +13,7 @@ class MaskBundle:
     mask_path: str
     preview_path: str
     grid_definition: dict[str, Any]
+    spatial_bounds: dict[str, float]
     signature: str
 
 
