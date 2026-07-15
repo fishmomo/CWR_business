@@ -39,6 +39,13 @@ unknown output kind before writing artifacts.
    input file. A task that requests report inputs receives an artifact index
    containing only files actually created during that run.
 
+## Python API Result
+
+`run_task()` returns the path to the requested report-input JSON when the task
+requests `report_inputs`; otherwise it returns the task output root. This
+preserves the existing report-consuming call pattern while giving artifact-only
+tasks a stable, existing return path.
+
 ## Compatibility
 
 Existing task examples already request `region_table`, `figure_timeseries`,
