@@ -2,10 +2,16 @@ import json
 from pathlib import Path
 
 
-def write_report_inputs(task, output_root: Path, artifacts: list[dict] | None = None, runtime: dict | None = None) -> Path:
+def write_report_inputs(
+    task,
+    output_root: Path,
+    artifacts: list[dict] | None = None,
+    runtime: dict | None = None,
+    name: str = "report_inputs",
+) -> Path:
     target_dir = output_root / "report_inputs"
     target_dir.mkdir(parents=True, exist_ok=True)
-    target = target_dir / "report_inputs.json"
+    target = target_dir / f"{name}.json"
     payload = {
         "task": {
             "task_id": task.task_id,

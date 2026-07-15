@@ -3,12 +3,38 @@ import csv
 from pathlib import Path
 
 import numpy as np
+import pytest
 import shapefile
 import xarray as xr
 
 from cwr_engine import __version__
 from cwr_engine.cli import main
 from cwr_engine.pipeline import run_task
+
+
+def _write_demo_task(tmp_path: Path, outputs: list[dict], workflow_steps: list[str]) -> Path:
+    task_path = tmp_path / "task.json"
+    task_path.write_text(
+        json.dumps(
+            {
+                "task_id": "output-contract",
+                "data_source": {"name": "demo", "root": "data/inputs/demo.nc"},
+                "time_slices": [{"scale": "year", "year": 2025}],
+                "region_spec": {
+                    "kind": "bbox",
+                    "payload": {"min_lon": 100.0, "max_lon": 110.0, "min_lat": 30.0, "max_lat": 35.0},
+                },
+                "variables": ["temp"],
+                "operators": ["mean"],
+                "outputs": outputs,
+                "workflow_steps": workflow_steps,
+                "reuse_policy": {},
+                "output_root": "artifacts/runs/output-contract",
+            }
+        ),
+        encoding="utf-8",
+    )
+    return task_path
 
 
 def test_package_imports():
@@ -79,6 +105,79 @@ def test_cli_returns_zero(tmp_path: Path):
         ]
     )
     assert code == 0
+
+
+def test_csv_only_task_returns_output_root_without_report_inputs(tmp_path: Path):
+    task_path = _write_demo_task(
+        tmp_path,
+        outputs=[{"kind": "region_table", "name": "annual_table"}],
+        workflow_steps=["prepare", "mask", "subset", "transform", "stat", "export"],
+    )
+    result = run_task(task_path, tmp_path / "result")
+    assert result == tmp_path / "result"
+    assert (result / "export" / "annual_table.csv").exists()
+    assert not (result / "report_inputs").exists()
+
+
+def test_unknown_output_kind_fails_before_creating_artifacts(tmp_path: Path):
+    task_path = _write_demo_task(
+        tmp_path,
+        outputs=[{"kind": "not_supported", "name": "bad"}],
+        workflow_steps=["prepare"],
+    )
+    with pytest.raises(ValueError, match="Unsupported output kind: not_supported"):
+        run_task(task_path, tmp_path / "result")
+    assert not (tmp_path / "result").exists()
+
+
+def test_requested_csv_name_controls_export_filename(tmp_path: Path):
+    task_path = _write_demo_task(
+        tmp_path,
+        outputs=[{"kind": "region_table", "name": "annual_table"}],
+        workflow_steps=["prepare", "mask", "subset", "transform", "stat", "export"],
+    )
+    root = run_task(task_path, tmp_path / "result")
+    assert (root / "export" / "annual_table.csv").exists()
+    assert not (root / "export" / "region_table.csv").exists()
+
+
+def test_grid_nc_request_exports_masked_grid(tmp_path: Path):
+    task_path = _write_demo_task(
+        tmp_path,
+        outputs=[{"kind": "grid_nc", "name": "annual_grid"}],
+        workflow_steps=["prepare", "mask", "subset", "transform", "export"],
+    )
+    root = run_task(task_path, tmp_path / "result")
+    dataset = xr.load_dataset(root / "export" / "annual_grid.nc", engine="scipy")
+    assert list(dataset.data_vars) == ["temp"]
+    assert dataset["temp"].dims == ("lat", "lon")
+
+
+def test_figure_only_task_creates_only_requested_figure(tmp_path: Path):
+    task_path = _write_demo_task(
+        tmp_path,
+        outputs=[{"kind": "figure_timeseries", "name": "annual_series"}],
+        workflow_steps=["prepare", "mask", "subset", "transform", "plot"],
+    )
+    root = run_task(task_path, tmp_path / "result")
+    assert (root / "plot" / "annual_series.png").exists()
+    assert not (root / "export").exists()
+    assert not (root / "report_inputs").exists()
+
+
+def test_report_inputs_uses_requested_name_and_indexes_created_artifacts(tmp_path: Path):
+    task_path = _write_demo_task(
+        tmp_path,
+        outputs=[
+            {"kind": "region_table", "name": "annual_table"},
+            {"kind": "report_inputs", "name": "annual_report_inputs"},
+        ],
+        workflow_steps=["prepare", "mask", "subset", "transform", "stat", "export", "report_inputs"],
+    )
+    report_path = run_task(task_path, tmp_path / "result")
+    payload = json.loads(report_path.read_text(encoding="utf-8"))
+    assert report_path.name == "annual_report_inputs.json"
+    assert [item["kind"] for item in payload["artifacts"]] == ["region_table"]
 
 
 def test_pipeline_loads_real_netcdf_task(tmp_path: Path):

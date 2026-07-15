@@ -2,7 +2,7 @@
   "task_id": "demo-run",
   "data_source": {
     "name": "demo",
-    "root": "inputs/demo.nc"
+    "root": "data/inputs/demo.nc"
   },
   "time_slices": [
     {
@@ -55,5 +55,5 @@
     "stat": true,
     "plot": true
   },
-  "output_root": "outputs/demo-run"
+  "output_root": "artifacts/runs/demo-run"
 }
