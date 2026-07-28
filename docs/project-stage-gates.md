@@ -267,13 +267,61 @@ not begin within this stage.
 
 The acceptance checks pass. No subsequent stage is active.
 
-## Next planned stage: standardized supplemental business metrics
+## Active stage: standardized supplemental business metrics
 
-Status: planned, not active.
+Status: active since 2026-07-28.
 
-### Intended outcome
+### Outcome
 
 Move boundary-flow metrics, monthly seasonal summaries, and report-specific
 spatial composites into versioned engine artifacts. The single-year profile can
 then consume standardized artifacts instead of transitional annual/monthly CSV
 and spatial NetCDF inputs.
+
+### Included
+
+- Add a versioned `business_metrics` JSON artifact indexed by
+  `report_inputs.json`.
+- Standardize annual regional totals, twelve monthly values, four seasonal
+  summaries, and boundary input/output/net-input metrics.
+- Keep gridded spatial composites in a separate NetCDF artifact referenced by
+  the metrics JSON.
+- Validate metric-profile parameters and required source variables before
+  formal artifacts are written.
+- Change the single-year cloud-water profile to resolve the standardized
+  artifacts from `report_inputs.json`.
+- Retain the transitional supplemental-input profile contract only as an
+  explicitly marked compatibility path during this stage.
+
+### Excluded
+
+- New physical formulas unrelated to the existing single-year cloud-water
+  report.
+- Day-to-month or month-to-year resampling; existing source products remain
+  authoritative at each time scale.
+- Recreating the five historical report figures.
+- Multi-year report templates, PDF conversion, GUI, and Web UI.
+- Removing the compatibility path before the standardized real-data
+  acceptance run passes.
+
+### Acceptance
+
+- One engine workflow writes a schema-versioned metrics JSON and spatial
+  NetCDF, and indexes both in `report_inputs.json`.
+- Metrics contain exactly one requested year, all twelve months, four seasons,
+  and four boundaries plus totals.
+- Boundary inputs, outputs, and net inputs agree with the retained historical
+  calculation to the declared numeric precision.
+- Missing periods, variables, incompatible grids, or unsupported metric
+  profiles fail before formal artifacts are created.
+- The real Inner Mongolia 2025 single-year report is reproduced using only
+  `report_inputs.json`, the retained template, and the five figure files.
+- The transitional and standardized profile paths produce equivalent report
+  text and tables for the real acceptance case.
+- The full test suite passes in `cwr_py312`.
+
+### Stop condition
+
+The stage ends immediately after the standardized real-data report is
+structurally verified and the implementation is committed. Compatibility-path
+removal and additional business metric profiles require a separate stage.
