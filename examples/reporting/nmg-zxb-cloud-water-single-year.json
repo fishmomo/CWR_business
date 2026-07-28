@@ -1,0 +1,21 @@
+{
+  "profile": "cloud_water_single_year",
+  "report_id": "nmg-zxb-cloud-water-2025",
+  "year": 2025,
+  "region_name": "内蒙古中西部七盟市研究区",
+  "report_inputs": "../../artifacts/runs/nmg-zxb-standard-2025/report_inputs/report_inputs.json",
+  "annual_csv": "../../artifacts/examples/nmg_zxb/csv/nmg-zxb_NCEP_00to25_Y.csv",
+  "monthly_csv": "../../artifacts/examples/nmg_zxb/csv/nmg-zxb_NCEP_00to25_M.csv",
+  "mask_nc": "../../artifacts/examples/nmg_zxb/mask/nmg-zxb.nc",
+  "spatial_nc": "../../artifacts/examples/nmg_zxb/pic/2025/nmg-zxb_picdata.nc",
+  "template": "../../data/templates/Simple-Year_Evaluation_Report-xizang-cm.docx",
+  "output": "../../artifacts/runs/nmg-zxb-single-year-profile/2025-Year_Evaluation_Report-nmg-zxb.docx",
+  "image_width_inches": 4.0,
+  "images": {
+    "target_image1": "../../artifacts/examples/nmg_zxb/mask/nmg-zxb.png",
+    "target_image2": "../../artifacts/examples/nmg_zxb/pic/2025/fig_2.png",
+    "target_image3": "../../artifacts/examples/nmg_zxb/pic/2025/fig_3.png",
+    "target_image4": "../../artifacts/examples/nmg_zxb/pic/2025/fig_4.png",
+    "target_image5": "../../artifacts/examples/nmg_zxb/pic/2025/fig_5.png"
+  }
+}

@@ -8,6 +8,8 @@ version = "0.1.0"
 description = "Unified computation engine for CWR workflows"
 requires-python = ">=3.12"
 dependencies = [
+    "h5netcdf>=1.6",
+    "h5py>=3.12",
     "matplotlib>=3.8",
     "numpy>=1.26",
     "pyproj>=3.6",

@@ -30,6 +30,14 @@ Single-template DOCX assembly from `report_inputs.json` is documented in
 conda run -n cwr_py312 cwr-report --spec path/to/report_spec.json
 ```
 
+The retained single-year cloud-water business template is supported through
+the explicit profile contract in
+`docs/cloud-water-single-year-profile-contract.md`.
+
+```powershell
+conda run -n cwr_py312 cwr-report --profile-spec path/to/profile.json
+```
+
 ## Repository data
 
 - `data/inputs/` contains versioned representative source data.

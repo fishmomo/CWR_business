@@ -387,6 +387,15 @@ def _format_table(table, binding: dict) -> None:
                 paragraph.alignment = WD_ALIGN_PARAGRAPH.CENTER
                 for run in paragraph.runs:
                     run.bold = row_index == 0
+            if binding.get("border_mode", "grid") == "three_line":
+                _set_three_line_borders(
+                    cell,
+                    is_header=row_index == 0,
+                    is_last=row_index == len(table.rows) - 1,
+                )
+
+    if binding.get("border_mode", "grid") not in {"grid", "three_line"}:
+        raise ValueError("Table border_mode must be grid or three_line")
 
 
 def _set_width(parent, tag: str, width: int) -> None:
@@ -411,3 +420,29 @@ def _set_cell_margins(cell) -> None:
             margins.append(element)
         element.set(qn("w:w"), str(width))
         element.set(qn("w:type"), "dxa")
+
+
+def _set_three_line_borders(cell, is_header: bool, is_last: bool) -> None:
+    properties = cell._tc.get_or_add_tcPr()
+    borders = properties.find(qn("w:tcBorders"))
+    if borders is None:
+        borders = OxmlElement("w:tcBorders")
+        properties.append(borders)
+    for edge in ("top", "bottom", "start", "end", "insideH", "insideV"):
+        element = borders.find(qn(f"w:{edge}"))
+        if element is None:
+            element = OxmlElement(f"w:{edge}")
+            borders.append(element)
+        element.set(qn("w:val"), "nil")
+    if is_header:
+        _set_border(borders, "top")
+        _set_border(borders, "bottom")
+    if is_last:
+        _set_border(borders, "bottom")
+
+
+def _set_border(borders, edge: str) -> None:
+    element = borders.find(qn(f"w:{edge}"))
+    element.set(qn("w:val"), "single")
+    element.set(qn("w:sz"), "12")
+    element.set(qn("w:color"), "000000")

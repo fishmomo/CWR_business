@@ -216,11 +216,11 @@ templates remain outside this stage.
 
 The acceptance checks pass. No subsequent stage is active.
 
-## Next planned stage: single-year cloud-water report profile
+## Completed stage: single-year cloud-water report profile
 
-Status: planned, not active.
+Status: completed on 2026-07-28.
 
-### Intended outcome
+### Outcome
 
 Adapt the existing `Simple-Year_Evaluation_Report-xizang-cm.docx` through a
 configuration-driven business profile. Derive its cloud-water-specific text
@@ -228,3 +228,52 @@ values and tables from standardized engine results, map the required figures,
 and generate one complete single-year business report in the retained
 historical layout. Multi-year templates, PDF conversion, and
 large-language-model narratives remain outside that stage.
+
+### Included
+
+- Require a successful standard `report_inputs.json` for task identity and
+  report-year consistency.
+- Declare annual CSV, monthly CSV, mask NetCDF, spatial-analysis NetCDF, and
+  five figure files as explicit profile inputs.
+- Derive all single-year text placeholders and both boundary-flow tables.
+- Generate deterministic spatial and seasonal distribution descriptions.
+- Populate the retained historical DOCX without unresolved placeholders.
+- Preserve the historical three-line table treatment and five-image layout.
+
+### Excluded
+
+- Recomputing the supplemental CSV, spatial NetCDF, or five legacy figures.
+- Moving boundary-flow calculations into the generalized computation core.
+- Multi-year template adaptation.
+- PDF conversion and large-language-model narratives.
+
+### Acceptance
+
+- Exactly one annual row and all twelve monthly rows are required for the
+  report year.
+- All text, table, and image slots in the retained template are populated.
+- Missing columns, periods, spatial variables, masks, or figures fail without
+  a DOCX.
+- The generated report contains two fixed-geometry three-line tables and five
+  images.
+- A real Inner Mongolia 2025 report is generated and structurally audited.
+- The full test suite passes in `cwr_py312`.
+
+### Stop condition
+
+The stage ends after the real 2025 single-year report passes acceptance and is
+committed. Multi-year work and generalized supplemental-metric computation do
+not begin within this stage.
+
+The acceptance checks pass. No subsequent stage is active.
+
+## Next planned stage: standardized supplemental business metrics
+
+Status: planned, not active.
+
+### Intended outcome
+
+Move boundary-flow metrics, monthly seasonal summaries, and report-specific
+spatial composites into versioned engine artifacts. The single-year profile can
+then consume standardized artifacts instead of transitional annual/monthly CSV
+and spatial NetCDF inputs.
