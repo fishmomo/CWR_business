@@ -1,0 +1,38 @@
+{
+  "active_region": "nmg-zxb",
+  "data_source": {
+    "name": "NCEP",
+    "root": "H:\\result_china\\NCEP"
+  },
+  "data_period": {
+    "start_year": 2000,
+    "end_year": 2025
+  },
+  "report_period": {
+    "start_year": 2000,
+    "end_year": 2025,
+    "single_start_year": 2025,
+    "single_end_year": 2025
+  },
+  "workflow": {
+    "reuse_existing_mask": false,
+    "reuse_existing_csv": false
+  },
+  "regions": {
+    "nmg-zxb": {
+      "address": "nmg-zxb",
+      "address_CN": "内蒙古中西部七盟市研究区",
+      "shp_path": "C:\\Users\\YUJIE\\Documents\\CWR_business\\inputs\\内蒙古中西部\\内蒙古中西部_7盟市融合研究区.shp",
+      "grid_resolution": 1,
+      "mask_nc_path": "C:\\Users\\YUJIE\\Documents\\CWR_business\\outputs\\nmg_zxb\\mask\\nmg-zxb.nc",
+      "mask_png_path": "C:\\Users\\YUJIE\\Documents\\CWR_business\\outputs\\nmg_zxb\\mask\\nmg-zxb.png",
+      "output_root": "C:\\Users\\YUJIE\\Documents\\CWR_business\\outputs\\nmg_zxb",
+      "csv_year_path": "C:\\Users\\YUJIE\\Documents\\CWR_business\\outputs\\nmg_zxb\\csv\\nmg-zxb_NCEP_00to25_Y.csv",
+      "csv_month_path": "C:\\Users\\YUJIE\\Documents\\CWR_business\\outputs\\nmg_zxb\\csv\\nmg-zxb_NCEP_00to25_M.csv"
+    }
+  },
+  "templates": {
+    "single_year": "H:\\BY_Weather\\routine_bussiness\\some_region_report\\template\\Simple-Year_Evaluation_Report-xizang-cm.docx",
+    "multi_year": "H:\\BY_Weather\\routine_bussiness\\some_region_report\\template\\Multi-Year_Evaluation_Report-xizang-cm.docx"
+  }
+}

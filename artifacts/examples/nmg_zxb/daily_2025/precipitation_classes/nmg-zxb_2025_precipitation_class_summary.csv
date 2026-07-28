@@ -1,0 +1,5 @@
+﻿class,precipitation_range_mm,mean_precipitation_days,mean_cumulative_cwr_mm
+light,"(0, 9.9]",105.639,950.430
+small,"(9.9, 24.9]",5.833,81.456
+medium,"(24.9, 49.9]",1.528,30.372
+heavy,"(49.9, inf]",0.097,2.512

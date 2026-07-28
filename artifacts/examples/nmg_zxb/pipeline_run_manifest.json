@@ -1,0 +1,109 @@
+{
+  "created_at": "2026-07-24T10:21:52",
+  "config_path": "C:\\Users\\YUJIE\\Documents\\CWR_business\\CWR_business_nmg_zxb_pipeline_config.json",
+  "active_region": "nmg-zxb",
+  "steps": [
+    "mask",
+    "csv",
+    "draw-yearly-single",
+    "draw-yearly-multi",
+    "draw-single",
+    "draw-multi",
+    "report-single",
+    "report-multi"
+  ],
+  "step_status": [
+    {
+      "step": "mask",
+      "status": "completed"
+    },
+    {
+      "step": "csv",
+      "status": "completed"
+    },
+    {
+      "step": "draw-yearly-single",
+      "status": "completed"
+    },
+    {
+      "step": "draw-yearly-multi",
+      "status": "completed"
+    },
+    {
+      "step": "draw-single",
+      "status": "completed"
+    },
+    {
+      "step": "draw-multi",
+      "status": "completed"
+    },
+    {
+      "step": "report-single",
+      "status": "completed"
+    },
+    {
+      "step": "report-multi",
+      "status": "completed"
+    }
+  ],
+  "self_check": [
+    {
+      "key": "shp_path",
+      "path": "C:\\Users\\YUJIE\\Documents\\CWR_business\\inputs\\内蒙古中西部\\内蒙古中西部_7盟市融合研究区.shp",
+      "status": "OK"
+    },
+    {
+      "key": "mask_nc_path",
+      "path": "C:\\Users\\YUJIE\\Documents\\CWR_business\\outputs\\nmg_zxb\\mask\\nmg-zxb.nc",
+      "status": "WILL_CREATE"
+    },
+    {
+      "key": "mask_png_path",
+      "path": "C:\\Users\\YUJIE\\Documents\\CWR_business\\outputs\\nmg_zxb\\mask\\nmg-zxb.png",
+      "status": "WILL_CREATE"
+    },
+    {
+      "key": "csv_year_path",
+      "path": "C:\\Users\\YUJIE\\Documents\\CWR_business\\outputs\\nmg_zxb\\csv\\nmg-zxb_NCEP_00to25_Y.csv",
+      "status": "WILL_CREATE"
+    },
+    {
+      "key": "csv_month_path",
+      "path": "C:\\Users\\YUJIE\\Documents\\CWR_business\\outputs\\nmg_zxb\\csv\\nmg-zxb_NCEP_00to25_M.csv",
+      "status": "WILL_CREATE"
+    },
+    {
+      "key": "output_root",
+      "path": "C:\\Users\\YUJIE\\Documents\\CWR_business\\outputs\\nmg_zxb",
+      "status": "OK"
+    }
+  ],
+  "workflow": {
+    "reuse_existing_mask": false,
+    "reuse_existing_csv": false
+  },
+  "data_source": {
+    "name": "NCEP",
+    "root": "H:\\result_china\\NCEP"
+  },
+  "data_period": {
+    "start_year": 2000,
+    "end_year": 2025
+  },
+  "report_period": {
+    "start_year": 2000,
+    "end_year": 2025,
+    "single_start_year": 2025,
+    "single_end_year": 2025
+  },
+  "region": {
+    "address": "nmg-zxb",
+    "address_CN": "内蒙古中西部七盟市研究区",
+    "shp_path": "C:\\Users\\YUJIE\\Documents\\CWR_business\\inputs\\内蒙古中西部\\内蒙古中西部_7盟市融合研究区.shp",
+    "mask_nc_path": "C:\\Users\\YUJIE\\Documents\\CWR_business\\outputs\\nmg_zxb\\mask\\nmg-zxb.nc",
+    "mask_png_path": "C:\\Users\\YUJIE\\Documents\\CWR_business\\outputs\\nmg_zxb\\mask\\nmg-zxb.png",
+    "csv_year_path": "C:\\Users\\YUJIE\\Documents\\CWR_business\\outputs\\nmg_zxb\\csv\\nmg-zxb_NCEP_00to25_Y.csv",
+    "csv_month_path": "C:\\Users\\YUJIE\\Documents\\CWR_business\\outputs\\nmg_zxb\\csv\\nmg-zxb_NCEP_00to25_M.csv",
+    "output_root": "C:\\Users\\YUJIE\\Documents\\CWR_business\\outputs\\nmg_zxb"
+  }
+}
