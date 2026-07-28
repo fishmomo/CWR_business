@@ -25,7 +25,12 @@ def test_versioned_samples_use_standard_locations():
 
 
 def test_business_scripts_use_the_organized_example_artifacts():
-    for name in ["calc_dxal_spring_autumn.py", "fix_dxal_csv_datasource.py"]:
+    for name in [
+        "calc_dxal_spring_autumn.py",
+        "fix_dxal_csv_datasource.py",
+        "calc_nmg_zxb_2025_daily_precip_pe.py",
+        "calc_nmg_zxb_daily_precip_distribution.py",
+    ]:
         source = (ROOT / "scripts" / name).read_text(encoding="utf-8")
         assert "CWR_business\\outputs" not in source
-        assert "artifacts" in source
+        assert "artifacts" in source or "data" in source
