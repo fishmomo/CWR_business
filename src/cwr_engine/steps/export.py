@@ -26,12 +26,20 @@ def run(context: dict) -> dict:
         )
     for request in _requests_for(context, "grid_nc"):
         target = output_root / "export" / f"{request.name}.nc"
-        grid_dataset = xr.Dataset(
-            {
-                variable: result["grid_mean_data"]
-                for variable, result in context["variable_results"].items()
-            }
-        )
+        grid_variables = {}
+        multiple_operators = len(context["task"].operators) > 1
+        for variable, result in context["variable_results"].items():
+            masked_data = result["transformed_slices"][0]["masked_data"]
+            for operator in context["task"].operators:
+                output_name = (
+                    f"{variable}_{operator}" if multiple_operators else variable
+                )
+                reducer = context["operator_registry"][operator]["apply"]
+                grid_data = reducer(masked_data, dim="time").rename(output_name)
+                grid_data.attrs["operator"] = operator
+                grid_data.attrs["source_variable"] = result["source_key"]
+                grid_variables[output_name] = grid_data
+        grid_dataset = xr.Dataset(grid_variables)
         grid_dataset.to_netcdf(target, engine="scipy")
         context["artifacts"].append(
             {

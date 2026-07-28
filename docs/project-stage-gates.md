@@ -26,7 +26,9 @@ The runnable baseline includes:
 - Requested regional CSV, gridded NetCDF, time-series PNG, and report-input
   artifacts.
 
-## Active stage: generalized computation core
+## Completed stage: generalized computation core
+
+Status: completed on 2026-07-28.
 
 ### Outcome
 
@@ -37,8 +39,9 @@ without changing the pipeline orchestration.
 
 - Execute every requested operator for every requested variable.
 - Implement and register the initial common operators.
-- Convert source time scales to requested day, month, and year result scales
-  with explicit aggregation rules.
+- Select day, month, or year source products explicitly and validate that the
+  source scale matches the requested time-slice scale.
+- Never derive a monthly or yearly product by resampling a finer-scale source.
 - Dispatch variables and operators through their registries.
 - Preserve the existing multi-variable regional CSV and gridded NetCDF output
   contracts.
@@ -54,8 +57,8 @@ without changing the pipeline orchestration.
 ### Acceptance
 
 - One task can request at least two variables and at least two operators.
-- Daily source data can produce verified monthly and yearly results.
-- Monthly source data can produce verified yearly results.
+- Day, month, and year tasks use their corresponding source products.
+- A source/time-slice scale mismatch fails before artifacts are created.
 - Regional CSV contains one unambiguous row per time slice, variable, and
   operator.
 - Gridded NetCDF retains requested variables, coordinates, masks, and units.
@@ -68,3 +71,5 @@ without changing the pipeline orchestration.
 The stage ends immediately after all acceptance checks pass and the result is
 committed. Plot-system expansion and upper-layer report integration begin only
 after a separate scope decision.
+
+The acceptance checks pass. No subsequent stage is active.

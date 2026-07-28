@@ -37,7 +37,7 @@ It must cover:
 - Data source discovery and standardized reading
 - Region mask preparation
 - Space-time slicing
-- Time-scale and variable transformations
+- Source-scale validation and variable transformations
 - Statistical computation
 - Plot generation
 - Export of standard artifacts
@@ -89,10 +89,9 @@ Step boundaries:
   - No statistics
   - No aggregation
 - `transform`
-  - Time-scale conversion
   - Unit conversion
   - Derived-variable generation
-  - Necessary resampling or re-expression
+  - Necessary variable re-expression
 - `stat`
   - Execute registered operators
   - Produce statistical outputs
@@ -123,6 +122,11 @@ Examples of business requests that all normalize into `time_slice` objects:
 - A date interval
 
 The upper layer may keep friendly business forms, but once a request enters the engine it must be normalized into a standard `time_slice` list.
+
+The source product must declare its own `time_scale`. Day, month, and year
+requests use the corresponding day, month, and year source products. The
+engine does not resample a finer-scale source into another official product
+scale.
 
 ## 7. Space Model
 
@@ -343,7 +347,7 @@ To prevent step-boundary drift:
 - `prepare`
   - Only raw data discovery, reading, and normalization
 - `transform`
-  - Only time-scale conversion, unit conversion, derived variables, and required re-expression
+  - Only unit conversion, derived variables, and required re-expression
 - `subset`
   - Only pure space-time clipping
 

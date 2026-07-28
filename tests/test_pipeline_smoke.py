@@ -12,13 +12,22 @@ from cwr_engine.cli import main
 from cwr_engine.pipeline import run_task
 
 
-def _write_demo_task(tmp_path: Path, outputs: list[dict], workflow_steps: list[str]) -> Path:
+def _write_demo_task(
+    tmp_path: Path,
+    outputs: list[dict],
+    workflow_steps: list[str],
+    source_scale: str = "year",
+) -> Path:
     task_path = tmp_path / "task.json"
     task_path.write_text(
         json.dumps(
             {
                 "task_id": "output-contract",
-                "data_source": {"name": "demo", "root": "data/inputs/demo.nc"},
+                "data_source": {
+                    "name": "demo",
+                    "root": "data/inputs/demo.nc",
+                    "time_scale": source_scale,
+                },
                 "time_slices": [{"scale": "year", "year": 2025}],
                 "region_spec": {
                     "kind": "bbox",
@@ -40,11 +49,17 @@ def _write_demo_task(tmp_path: Path, outputs: list[dict], workflow_steps: list[s
 def _write_two_variable_task(tmp_path: Path, outputs: list[dict], workflow_steps: list[str], operators: list[str] | None = None) -> Path:
     xr.Dataset(
         data_vars={
-            "temp": (("time", "lat", "lon"), np.array([[[1.0, 2.0], [3.0, 4.0]]])),
-            "precip": (("time", "lat", "lon"), np.array([[[10.0, 20.0], [30.0, 40.0]]])),
+            "temp": (
+                ("time", "lat", "lon"),
+                np.array([[[1.0, 2.0], [3.0, 4.0]], [[5.0, 6.0], [7.0, 8.0]]]),
+            ),
+            "precip": (
+                ("time", "lat", "lon"),
+                np.array([[[10.0, 20.0], [30.0, 40.0]], [[50.0, 60.0], [70.0, 80.0]]]),
+            ),
         },
         coords={
-            "time": np.array(["2025-01-01"], dtype="datetime64[ns]"),
+            "time": np.array(["2025-01-01", "2025-07-01"], dtype="datetime64[ns]"),
             "lat": [30.0, 31.0],
             "lon": [100.0, 101.0],
         },
@@ -54,7 +69,12 @@ def _write_two_variable_task(tmp_path: Path, outputs: list[dict], workflow_steps
         json.dumps(
             {
                 "task_id": "two-variables",
-                "data_source": {"name": "nc", "root": "two_variables.nc", "engine": "scipy"},
+                "data_source": {
+                    "name": "nc",
+                    "root": "two_variables.nc",
+                    "engine": "scipy",
+                    "time_scale": "year",
+                },
                 "time_slices": [{"scale": "year", "year": 2025}],
                 "region_spec": {
                     "kind": "bbox",
@@ -225,8 +245,8 @@ def test_multiple_variables_export_one_stat_row_per_variable(tmp_path: Path):
     root = run_task(task_path, tmp_path / "result")
     with (root / "export" / "annual_table.csv").open("r", encoding="utf-8", newline="") as handle:
         rows = list(csv.reader(handle))
-    assert rows[1] == ["2025", "temp", "mean", "2.50"]
-    assert rows[2] == ["2025", "precip", "mean", "25.00"]
+    assert rows[1] == ["2025", "temp", "mean", "4.50"]
+    assert rows[2] == ["2025", "precip", "mean", "45.00"]
 
 
 def test_unsupported_operator_fails_before_creating_artifacts(tmp_path: Path):
@@ -234,9 +254,83 @@ def test_unsupported_operator_fails_before_creating_artifacts(tmp_path: Path):
         tmp_path,
         outputs=[{"kind": "region_table", "name": "annual_table"}],
         workflow_steps=["prepare"],
-        operators=["max"],
+        operators=["median"],
     )
-    with pytest.raises(ValueError, match="Unsupported operator: max"):
+    with pytest.raises(ValueError, match="Unsupported operator: median"):
+        run_task(task_path, tmp_path / "result")
+    assert not (tmp_path / "result").exists()
+
+
+def test_multiple_variables_execute_every_requested_operator(tmp_path: Path):
+    task_path = _write_two_variable_task(
+        tmp_path,
+        outputs=[{"kind": "region_table", "name": "annual_table"}],
+        workflow_steps=["prepare", "mask", "subset", "transform", "stat", "export"],
+        operators=["mean", "max", "min", "sum"],
+    )
+    root = run_task(task_path, tmp_path / "result")
+    with (root / "export" / "annual_table.csv").open(
+        "r", encoding="utf-8", newline=""
+    ) as handle:
+        rows = list(csv.reader(handle))
+    assert rows[1:] == [
+        ["2025", "temp", "mean", "4.50"],
+        ["2025", "temp", "max", "8.00"],
+        ["2025", "temp", "min", "1.00"],
+        ["2025", "temp", "sum", "36.00"],
+        ["2025", "precip", "mean", "45.00"],
+        ["2025", "precip", "max", "80.00"],
+        ["2025", "precip", "min", "10.00"],
+        ["2025", "precip", "sum", "360.00"],
+    ]
+
+
+def test_multiple_operators_grid_nc_names_each_result(tmp_path: Path):
+    task_path = _write_two_variable_task(
+        tmp_path,
+        outputs=[{"kind": "grid_nc", "name": "annual_grids"}],
+        workflow_steps=["prepare", "mask", "subset", "transform", "export"],
+        operators=["mean", "max"],
+    )
+    root = run_task(task_path, tmp_path / "result")
+    dataset = xr.load_dataset(root / "export" / "annual_grids.nc", engine="scipy")
+    assert set(dataset.data_vars) == {
+        "temp_mean",
+        "temp_max",
+        "precip_mean",
+        "precip_max",
+    }
+    assert dataset["temp_mean"].dims == ("lat", "lon")
+    assert dataset["temp_mean"].attrs["operator"] == "mean"
+    assert dataset["temp_mean"].attrs["source_variable"] == "temp"
+    assert dataset["temp_mean"].attrs["units"] == "degC"
+
+
+def test_source_scale_must_match_requested_time_slice(tmp_path: Path):
+    task_path = _write_demo_task(
+        tmp_path,
+        outputs=[{"kind": "region_table", "name": "annual_table"}],
+        workflow_steps=["prepare"],
+        source_scale="month",
+    )
+    with pytest.raises(
+        ValueError,
+        match="Data source time scale 'month' does not match time slice scale 'year'",
+    ):
+        run_task(task_path, tmp_path / "result")
+    assert not (tmp_path / "result").exists()
+
+
+def test_unregistered_variable_fails_before_creating_artifacts(tmp_path: Path):
+    task_path = _write_demo_task(
+        tmp_path,
+        outputs=[{"kind": "region_table", "name": "annual_table"}],
+        workflow_steps=["prepare"],
+    )
+    payload = json.loads(task_path.read_text(encoding="utf-8"))
+    payload["variables"] = ["not_registered"]
+    task_path.write_text(json.dumps(payload), encoding="utf-8")
+    with pytest.raises(ValueError, match="Unsupported variable: not_registered"):
         run_task(task_path, tmp_path / "result")
     assert not (tmp_path / "result").exists()
 
@@ -293,6 +387,7 @@ def test_pipeline_loads_real_netcdf_task(tmp_path: Path):
                     "name": "nc",
                     "root": "sample.nc",
                     "engine": "scipy",
+                    "time_scale": "year",
                 },
                 "time_slices": [{"scale": "year", "year": 2025}],
                 "region_spec": {
@@ -390,6 +485,7 @@ def test_pipeline_uses_existing_mask_for_statistics(tmp_path: Path):
                     "name": "nc",
                     "root": "sample.nc",
                     "engine": "scipy",
+                    "time_scale": "year",
                 },
                 "time_slices": [{"scale": "year", "year": 2025}],
                 "region_spec": {
@@ -479,6 +575,7 @@ def test_pipeline_builds_mask_from_shapefile(tmp_path: Path):
                     "name": "nc",
                     "root": "sample.nc",
                     "engine": "scipy",
+                    "time_scale": "year",
                 },
                 "time_slices": [{"scale": "year", "year": 2025}],
                 "region_spec": {
@@ -556,6 +653,7 @@ def test_pipeline_outputs_one_stat_row_per_time_slice(tmp_path: Path):
                     "name": "nc",
                     "root": "sample.nc",
                     "engine": "scipy",
+                    "time_scale": "month",
                 },
                 "time_slices": [
                     {"scale": "month", "year": 2025, "month": 1},

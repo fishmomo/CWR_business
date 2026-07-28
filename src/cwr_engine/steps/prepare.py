@@ -17,14 +17,14 @@ def run(context: dict) -> dict:
 
 
 def _build_demo_dataset() -> xr.Dataset:
-    times = np.array([f"2025-{month:02d}-01" for month in range(1, 13)], dtype="datetime64[ns]")
+    times = np.array(["2025-01-01"], dtype="datetime64[ns]")
     lats = np.array([30.0, 31.0, 32.0, 33.0, 34.0, 35.0])
     lons = np.array([100.0, 102.0, 104.0, 106.0, 108.0, 110.0])
 
-    time_component = np.arange(1, len(times) + 1, dtype=float)[:, None, None]
+    base_component = np.array([6.5], dtype=float)[:, None, None]
     lat_component = np.arange(len(lats), dtype=float)[None, :, None]
     lon_component = np.arange(len(lons), dtype=float)[None, None, :]
-    temp = time_component + lat_component + lon_component
+    temp = base_component + lat_component + lon_component
 
     dataset = xr.Dataset(
         data_vars={
@@ -35,7 +35,7 @@ def _build_demo_dataset() -> xr.Dataset:
             "lat": lats,
             "lon": lons,
         },
-        attrs={"source_name": "demo"},
+        attrs={"source_name": "demo", "time_scale": "year"},
     )
     return dataset
 

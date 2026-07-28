@@ -9,5 +9,7 @@ def test_builtin_registries_have_seed_entries():
     plots = build_plot_registry()
 
     assert "temp" in variables
+    assert "precip" in variables
     assert "mean" in operators
+    assert {"mean", "max", "min", "sum"} <= operators.keys()
     assert "timeseries" in plots

@@ -21,7 +21,7 @@ The first delivery recognizes these request kinds:
 | --- | --- | --- |
 | `region_table` | `export/<name>.csv` | `stat_results` |
 | `figure_timeseries` | `plot/<name>.png` | concatenated regional time series |
-| `grid_nc` | `export/<name>.nc` | time-mean, region-masked grid data |
+| `grid_nc` | `export/<name>.nc` | operator-reduced, region-masked grid data |
 | `report_inputs` | `report_inputs/<name>.json` | task metadata, artifacts, runtime, statistics |
 
 `OutputRequest.name` supplies the output filename stem. The engine rejects an

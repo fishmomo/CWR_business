@@ -2,7 +2,8 @@
   "task_id": "demo-run",
   "data_source": {
     "name": "demo",
-    "root": "data/inputs/demo.nc"
+    "root": "data/inputs/demo.nc",
+    "time_scale": "year"
   },
   "time_slices": [
     {
