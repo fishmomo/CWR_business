@@ -1,6 +1,7 @@
 import numpy as np
 import xarray as xr
-from pathlib import Path
+
+from cwr_engine.data_sources.netcdf import load_netcdf_source
 
 
 def run(context: dict) -> dict:
@@ -11,7 +12,9 @@ def run(context: dict) -> dict:
         context["prepared_dataset"] = _build_demo_dataset()
         return context
     if source_name in {"nc", "netcdf"}:
-        context["prepared_dataset"] = _load_netcdf_dataset(context)
+        dataset, trace = load_netcdf_source(context)
+        context["prepared_dataset"] = dataset
+        context["runtime"]["data_source"] = trace
         return context
     raise ValueError(f"Unsupported data source for current bootstrap engine: {source_name}")
 
@@ -38,20 +41,3 @@ def _build_demo_dataset() -> xr.Dataset:
         attrs={"source_name": "demo", "time_scale": "year"},
     )
     return dataset
-
-
-def _load_netcdf_dataset(context: dict) -> xr.Dataset:
-    task = context["task"]
-    source_root = task.data_source["root"]
-    dataset_path = _resolve_data_source_path(source_root, context["task_path"])
-    engine = task.data_source.get("engine")
-    if engine:
-        return xr.load_dataset(dataset_path, engine=engine)
-    return xr.load_dataset(dataset_path)
-
-
-def _resolve_data_source_path(source_root: str, task_path: Path) -> Path:
-    path = Path(source_root)
-    if path.is_absolute():
-        return path
-    return (task_path.parent / path).resolve()

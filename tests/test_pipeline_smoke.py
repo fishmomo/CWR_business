@@ -59,7 +59,7 @@ def _write_two_variable_task(tmp_path: Path, outputs: list[dict], workflow_steps
             ),
         },
         coords={
-            "time": np.array(["2025-01-01", "2025-07-01"], dtype="datetime64[ns]"),
+            "time": np.array(["2025-01-01", "2025-02-01"], dtype="datetime64[ns]"),
             "lat": [30.0, 31.0],
             "lon": [100.0, 101.0],
         },
@@ -73,9 +73,16 @@ def _write_two_variable_task(tmp_path: Path, outputs: list[dict], workflow_steps
                     "name": "nc",
                     "root": "two_variables.nc",
                     "engine": "scipy",
-                    "time_scale": "year",
+                    "time_scale": "month",
                 },
-                "time_slices": [{"scale": "year", "year": 2025}],
+                "time_slices": [
+                    {
+                        "scale": "range",
+                        "start": "2025-01-01",
+                        "end": "2025-02-28",
+                        "label": "2025",
+                    }
+                ],
                 "region_spec": {
                     "kind": "bbox",
                     "payload": {"min_lon": 100.0, "max_lon": 101.0, "min_lat": 30.0, "max_lat": 31.0},
@@ -384,12 +391,19 @@ def test_pipeline_loads_real_netcdf_task(tmp_path: Path):
             {
                 "task_id": "netcdf-run",
                 "data_source": {
-                    "name": "nc",
-                    "root": "sample.nc",
-                    "engine": "scipy",
-                    "time_scale": "year",
-                },
-                "time_slices": [{"scale": "year", "year": 2025}],
+                        "name": "nc",
+                        "root": "sample.nc",
+                        "engine": "scipy",
+                        "time_scale": "month",
+                    },
+                    "time_slices": [
+                        {
+                            "scale": "range",
+                            "start": "2025-01-01",
+                            "end": "2025-02-28",
+                            "label": "2025",
+                        }
+                    ],
                 "region_spec": {
                     "kind": "bbox",
                     "payload": {
@@ -482,12 +496,19 @@ def test_pipeline_uses_existing_mask_for_statistics(tmp_path: Path):
             {
                 "task_id": "existing-mask-run",
                 "data_source": {
-                    "name": "nc",
-                    "root": "sample.nc",
-                    "engine": "scipy",
-                    "time_scale": "year",
-                },
-                "time_slices": [{"scale": "year", "year": 2025}],
+                        "name": "nc",
+                        "root": "sample.nc",
+                        "engine": "scipy",
+                        "time_scale": "month",
+                    },
+                    "time_slices": [
+                        {
+                            "scale": "range",
+                            "start": "2025-01-01",
+                            "end": "2025-02-28",
+                            "label": "2025",
+                        }
+                    ],
                 "region_spec": {
                     "kind": "existing_mask",
                     "payload": {
@@ -572,12 +593,19 @@ def test_pipeline_builds_mask_from_shapefile(tmp_path: Path):
             {
                 "task_id": "shp-run",
                 "data_source": {
-                    "name": "nc",
-                    "root": "sample.nc",
-                    "engine": "scipy",
-                    "time_scale": "year",
-                },
-                "time_slices": [{"scale": "year", "year": 2025}],
+                        "name": "nc",
+                        "root": "sample.nc",
+                        "engine": "scipy",
+                        "time_scale": "month",
+                    },
+                    "time_slices": [
+                        {
+                            "scale": "range",
+                            "start": "2025-01-01",
+                            "end": "2025-02-28",
+                            "label": "2025",
+                        }
+                    ],
                 "region_spec": {
                     "kind": "shp",
                     "payload": {

@@ -19,7 +19,7 @@ of being added to the active scope.
 The runnable baseline includes:
 
 - Standard JSON tasks and an explicit step pipeline.
-- Demo and single-file NetCDF data sources.
+- Demo plus single-file and `D/M/Y` multi-file NetCDF product catalogs.
 - `bbox`, existing-mask, and SHP region inputs compiled to an internal mask.
 - Day, month, year, and multiple time-slice selection.
 - Multiple requested variables.
@@ -71,5 +71,49 @@ without changing the pipeline orchestration.
 The stage ends immediately after all acceptance checks pass and the result is
 committed. Plot-system expansion and upper-layer report integration begin only
 after a separate scope decision.
+
+The acceptance checks pass.
+
+## Completed stage: real product data sources
+
+Status: completed on 2026-07-28.
+
+### Outcome
+
+Read requested periods directly from the existing day, month, and year product
+directories and normalize them into the engine's `time/lat/lon` data model.
+
+### Included
+
+- Discover `ResultGrid_D`, `ResultGrid_M`, and `ResultGrid_Y` NetCDF files.
+- Filter files from requested time slices before loading their data.
+- Combine multiple product files in chronological order.
+- Normalize scalar time coordinates and spatial coordinate names/dimensions.
+- Support explicit coordinate and variable mappings.
+- Detect missing periods, duplicate times, missing variables, and incompatible
+  grids.
+- Record source-file trace information in runtime metadata.
+
+### Excluded
+
+- Cross-scale resampling or aggregation.
+- GRIB and non-NetCDF source formats.
+- Remote object storage and databases.
+- Plot expansion, cache execution, and report assembly.
+
+### Acceptance
+
+- Representative day, month, and year product files can be read.
+- A multi-file task selects only files required by its time slices.
+- Coordinates are normalized to ascending `time/lat/lon`.
+- Missing periods and duplicate internal times fail without formal artifacts.
+- Requested registered variables resolve from every selected file.
+- A real one-period task from an accessible product directory succeeds.
+- The full test suite passes in `cwr_py312`.
+
+### Stop condition
+
+The stage ends after all acceptance checks pass and the result is committed.
+No plotting or caching work starts within this stage.
 
 The acceptance checks pass. No subsequent stage is active.
