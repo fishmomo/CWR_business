@@ -24,3 +24,9 @@ conda run -n cwr_py312 cwr-engine --task tests/fixtures/minimal_task.json --outp
   records; these are not CWR engine task-schema files.
 - `artifacts/examples/` contains curated reference outputs.
 - Write new pipeline results under `artifacts/runs/`; that directory is ignored.
+
+## Delivery stages
+
+Development follows explicit stage gates. Each stage declares its scope,
+acceptance criteria, and stop condition before implementation begins. See
+`docs/project-stage-gates.md` for the current stage boundary.
