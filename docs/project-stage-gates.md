@@ -116,4 +116,50 @@ directories and normalize them into the engine's `time/lat/lon` data model.
 The stage ends after all acceptance checks pass and the result is committed.
 No plotting or caching work starts within this stage.
 
+The acceptance checks pass.
+
+## Completed stage: standard plotting system
+
+Status: completed on 2026-07-28.
+
+### Outcome
+
+Generate the three common figure types through the plot registry using standard
+engine results and validated output parameters.
+
+### Included
+
+- Registry dispatch for time-series, spatial-distribution, and bar-comparison
+  figures.
+- Plot parameters for title templates, figure size, DPI, labels, colors, and
+  distribution color limits.
+- One time-series figure per requested variable.
+- One distribution figure per time slice, variable, and operator.
+- One comparison bar figure per variable and operator.
+- Structured figure metadata in `report_inputs.json`.
+- Validation before output creation for unsupported parameters and malformed
+  title templates.
+
+### Excluded
+
+- Administrative boundaries, projection selection, and cartographic layouts.
+- Product-specific multi-panel figures and report-specific styling.
+- Interactive figures, animation, GUI, and Web presentation.
+- Cache execution and report assembly.
+
+### Acceptance
+
+- One task can request all three standard figure types.
+- Multiple time slices and operators produce unambiguous filenames.
+- Masked values remain invisible in distribution figures.
+- Valid size, DPI, title, color, and color-limit parameters are honored.
+- Invalid plot parameters fail before output directories are created.
+- Existing time-series requests remain compatible.
+- The full test suite passes in `cwr_py312`.
+
+### Stop condition
+
+The stage ends after all acceptance checks pass and the result is committed.
+No report-specific plotting is added within this stage.
+
 The acceptance checks pass. No subsequent stage is active.

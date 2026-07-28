@@ -20,6 +20,9 @@ conda run -n cwr_py312 cwr-engine --task tests/fixtures/minimal_task.json --outp
 Real NetCDF product catalogs and their `D/M/Y` directory contract are
 documented in `docs/real-product-data-source-contract.md`.
 
+Standard time-series, distribution, and comparison figure requests are
+documented in `docs/standard-plot-contract.md`.
+
 ## Repository data
 
 - `data/inputs/` contains versioned representative source data.

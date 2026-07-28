@@ -1,13 +1,22 @@
 from pathlib import Path
 
 from cwr_engine.registries.operators import build_operator_registry
+from cwr_engine.registries.plots import build_plot_registry
 from cwr_engine.registries.variables import build_variable_registry
+from cwr_engine.plotting.validation import validate_plot_requests
 from cwr_engine.steps import export, mask, plot, prepare, stat, subset, transform
 from cwr_engine.steps.report_inputs import write_report_inputs
 from cwr_engine.task_schema import load_task
 
 
-SUPPORTED_OUTPUT_KINDS = {"region_table", "figure_timeseries", "grid_nc", "report_inputs"}
+SUPPORTED_OUTPUT_KINDS = {
+    "region_table",
+    "figure_timeseries",
+    "figure_distribution",
+    "figure_bar_compare",
+    "grid_nc",
+    "report_inputs",
+}
 
 
 STEP_RUNNERS = {
@@ -77,10 +86,12 @@ def run_task(task_path: Path, output_root: Path | None = None) -> Path:
     task = load_task(task_path)
     variable_registry = build_variable_registry()
     operator_registry = build_operator_registry()
+    plot_registry = build_plot_registry()
     _validate_output_requests(task)
     _validate_variables(task, variable_registry)
     _validate_operators(task, operator_registry)
     _validate_time_scales(task, variable_registry, operator_registry)
+    validate_plot_requests(task, plot_registry)
     root = output_root or Path(task.output_root)
     root.mkdir(parents=True, exist_ok=True)
     context = {
@@ -89,6 +100,7 @@ def run_task(task_path: Path, output_root: Path | None = None) -> Path:
         "output_root": root,
         "variable_registry": variable_registry,
         "operator_registry": operator_registry,
+        "plot_registry": plot_registry,
         "artifacts": [],
         "runtime": {
             "workflow_steps": task.workflow_steps,

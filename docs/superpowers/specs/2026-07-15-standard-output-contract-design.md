@@ -21,6 +21,8 @@ The first delivery recognizes these request kinds:
 | --- | --- | --- |
 | `region_table` | `export/<name>.csv` | `stat_results` |
 | `figure_timeseries` | `plot/<name>.png` | concatenated regional time series |
+| `figure_distribution` | `plot/<name>_<label>_<variable>_<operator>.png` | operator-reduced masked grid |
+| `figure_bar_compare` | `plot/<name>_<variable>_<operator>.png` | regional statistics by time slice |
 | `grid_nc` | `export/<name>.nc` | operator-reduced, region-masked grid data |
 | `report_inputs` | `report_inputs/<name>.json` | task metadata, artifacts, runtime, statistics |
 
@@ -32,7 +34,8 @@ unknown output kind before writing artifacts.
 1. Workflow steps still control computation dependencies. `prepare`, `mask`,
    `subset`, `transform`, and `stat` run when present in `workflow_steps`.
 2. `export` writes only requested `region_table` and `grid_nc` artifacts.
-3. `plot` writes only requested `figure_timeseries` artifacts.
+3. `plot` writes only requested standard figure artifacts through the plot
+   registry.
 4. `report_inputs` is written only when it is explicitly requested and the
    `report_inputs` workflow step is present.
 5. A task that requests only CSV or only a figure therefore produces no report

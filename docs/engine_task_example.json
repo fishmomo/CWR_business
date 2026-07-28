@@ -33,7 +33,11 @@
     },
     {
       "kind": "figure_timeseries",
-      "name": "temp_series"
+      "name": "temp_series",
+      "params": {
+        "title": "{variable} annual series",
+        "dpi": 120
+      }
     },
     {
       "kind": "report_inputs",

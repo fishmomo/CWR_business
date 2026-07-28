@@ -127,11 +127,16 @@ def _detect_source_crs(shp_path: Path, payload: dict) -> str | None:
 
 
 def _derive_bounds(mask_data: xr.DataArray) -> dict[str, float]:
+    valid = mask_data.astype(bool)
+    if not bool(valid.any().item()):
+        raise ValueError("The region mask contains no grid cells")
+    valid_lons = mask_data["lon"].where(valid.any(dim="lat"), drop=True)
+    valid_lats = mask_data["lat"].where(valid.any(dim="lon"), drop=True)
     return {
-        "min_lon": float(mask_data["lon"].min().item()),
-        "max_lon": float(mask_data["lon"].max().item()),
-        "min_lat": float(mask_data["lat"].min().item()),
-        "max_lat": float(mask_data["lat"].max().item()),
+        "min_lon": float(valid_lons.min().item()),
+        "max_lon": float(valid_lons.max().item()),
+        "min_lat": float(valid_lats.min().item()),
+        "max_lat": float(valid_lats.max().item()),
     }
 
 
