@@ -14,6 +14,9 @@ Once the acceptance checks pass, the stage stops and is committed as a
 reproducible milestone. Additional ideas are recorded for a later stage instead
 of being added to the active scope.
 
+Every stage-completion report must also state the next planned stage, summarize
+its intended outcome, and say explicitly whether that stage is active.
+
 ## Current baseline
 
 The runnable baseline includes:
@@ -163,3 +166,14 @@ The stage ends after all acceptance checks pass and the result is committed.
 No report-specific plotting is added within this stage.
 
 The acceptance checks pass. No subsequent stage is active.
+
+## Next planned stage: upper-layer report product integration
+
+Status: planned, not active.
+
+### Intended outcome
+
+Consume standardized statistics, figures, and `report_inputs` to populate report
+templates with data, images, and generated analysis text, then assemble a
+complete report. The template protocol, initial report format, acceptance
+checks, and stop condition must be agreed before this stage is activated.
