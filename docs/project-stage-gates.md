@@ -28,6 +28,7 @@ The runnable baseline includes:
 - Multiple requested variables.
 - Requested regional CSV, gridded NetCDF, time-series PNG, and report-input
   artifacts.
+- An independent single-template DOCX report consumer.
 
 ## Completed stage: generalized computation core
 
@@ -167,13 +168,63 @@ No report-specific plotting is added within this stage.
 
 The acceptance checks pass. No subsequent stage is active.
 
-## Next planned stage: upper-layer report product integration
+## Completed stage: upper-layer report product integration
+
+Status: completed on 2026-07-28.
+
+### Outcome
+
+Consume standardized statistics, figures, and `report_inputs` to populate report
+templates with data, images, and generated analysis text, then assemble a
+complete report.
+
+### Included
+
+- An independent report consumer that does not invoke computation steps.
+- One DOCX template per report specification.
+- `<<...>>` slots for text, deterministic narrative, statistics tables, and
+  standard figure artifacts.
+- Configuration-driven source paths, artifact selectors, labels, and image
+  widths.
+- Strict validation that prevents unresolved or partial reports.
+- One representative single-period report acceptance run.
+
+### Excluded
+
+- Multi-year-specific business analysis.
+- PDF output and office-format conversion.
+- Large-language-model narrative generation.
+- Multiple templates in one report task.
+- Product-specific formulas not present in `report_inputs`.
+
+### Acceptance
+
+- A report specification can populate all four supported slot types.
+- Placeholders split across Word runs are replaced correctly.
+- Statistics and standard figure artifacts are selected from
+  `report_inputs.json`.
+- A deterministic Chinese analysis paragraph is generated from statistics.
+- Missing inputs, ambiguous figures, and unresolved slots fail without a DOCX.
+- The generated DOCX opens successfully and passes structural checks.
+- The full test suite passes in `cwr_py312`.
+
+### Stop condition
+
+The stage ends after one representative single-period DOCX is generated,
+verified, and committed. PDF, multi-year reports, and additional business
+templates remain outside this stage.
+
+The acceptance checks pass. No subsequent stage is active.
+
+## Next planned stage: single-year cloud-water report profile
 
 Status: planned, not active.
 
 ### Intended outcome
 
-Consume standardized statistics, figures, and `report_inputs` to populate report
-templates with data, images, and generated analysis text, then assemble a
-complete report. The template protocol, initial report format, acceptance
-checks, and stop condition must be agreed before this stage is activated.
+Adapt the existing `Simple-Year_Evaluation_Report-xizang-cm.docx` through a
+configuration-driven business profile. Derive its cloud-water-specific text
+values and tables from standardized engine results, map the required figures,
+and generate one complete single-year business report in the retained
+historical layout. Multi-year templates, PDF conversion, and
+large-language-model narratives remain outside that stage.

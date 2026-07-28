@@ -1,0 +1,64 @@
+{
+  "report_id": "real-standard-plots-report",
+  "report_inputs": "../../artifacts/runs/real-standard-plots/report_inputs/report_inputs.json",
+  "template": "../../data/templates/standard-single-period-report.docx",
+  "output": "../../artifacts/runs/real-standard-plots/report/standard-report.docx",
+  "text_slots": {
+    "report_title": "2025年1—2月云水资源区域分析报告",
+    "region_name": "100°E—110°E、30°N—35°N区域",
+    "report_period": "2025年1—2月",
+    "data_source": {
+      "source": "inputs.data_source.name"
+    }
+  },
+  "narrative_slots": {
+    "analysis_summary": {
+      "kind": "stat_summary",
+      "variable": "GMv",
+      "operator": "mean",
+      "variable_label": "垂直云水资源",
+      "operator_label": "区域平均值",
+      "unit": "亿吨",
+      "value_scale": 1e-11,
+      "precision": 2
+    }
+  },
+  "table_slots": {
+    "stats_table": {
+      "source": "stats",
+      "filters": {
+        "variable": "GMv",
+        "operator": "mean"
+      },
+      "columns": [
+        {
+          "field": "label",
+          "title": "时段"
+        },
+        {
+          "field": "value",
+          "title": "区域平均值（亿吨）",
+          "scale": 1e-11,
+          "precision": 2
+        }
+      ],
+      "column_widths": [
+        3000,
+        5310
+      ]
+    }
+  },
+  "image_slots": {
+    "overview_figure": {
+      "selector": {
+        "kind": "figure_distribution",
+        "name": "gmv_spatial",
+        "variable": "GMv",
+        "operator": "mean",
+        "label": "2025-01"
+      },
+      "width_inches": 5.4,
+      "alt_text": "2025年1月垂直云水资源区域平均值空间分布图"
+    }
+  }
+}

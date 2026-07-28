@@ -29,6 +29,10 @@ The first delivery recognizes these request kinds:
 `OutputRequest.name` supplies the output filename stem. The engine rejects an
 unknown output kind before writing artifacts.
 
+`report_inputs.json` declares `schema_version: 1`. Every artifact entry records
+the originating output request `name` so upper-layer consumers can select an
+artifact without relying on its filename.
+
 ## Execution Rules
 
 1. Workflow steps still control computation dependencies. `prepare`, `mask`,

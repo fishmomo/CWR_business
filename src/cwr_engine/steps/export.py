@@ -21,6 +21,7 @@ def run(context: dict) -> dict:
         context["artifacts"].append(
             {
                 "kind": "region_table",
+                "name": request.name,
                 "path": str(target),
             }
         )
@@ -44,6 +45,7 @@ def run(context: dict) -> dict:
         context["artifacts"].append(
             {
                 "kind": "grid_nc",
+                "name": request.name,
                 "path": str(target),
             }
         )

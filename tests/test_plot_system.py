@@ -158,6 +158,7 @@ def test_plot_registry_dispatches_all_standard_figure_types(tmp_path: Path):
     )
     assert distribution == {
         "kind": "figure_distribution",
+        "name": "spatial",
         "path": str(
             tmp_path
             / "result"

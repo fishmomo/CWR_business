@@ -13,6 +13,7 @@ def write_report_inputs(
     target_dir.mkdir(parents=True, exist_ok=True)
     target = target_dir / f"{name}.json"
     payload = {
+        "schema_version": 1,
         "task": {
             "task_id": task.task_id,
             "status": "success",

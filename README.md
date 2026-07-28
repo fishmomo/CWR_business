@@ -23,6 +23,13 @@ documented in `docs/real-product-data-source-contract.md`.
 Standard time-series, distribution, and comparison figure requests are
 documented in `docs/standard-plot-contract.md`.
 
+Single-template DOCX assembly from `report_inputs.json` is documented in
+`docs/report-product-contract.md`.
+
+```powershell
+conda run -n cwr_py312 cwr-report --spec path/to/report_spec.json
+```
+
 ## Repository data
 
 - `data/inputs/` contains versioned representative source data.

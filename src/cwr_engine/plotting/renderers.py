@@ -32,6 +32,7 @@ def render_timeseries(context: dict, request, specification: dict) -> None:
         context["artifacts"].append(
             {
                 "kind": request.kind,
+                "name": request.name,
                 "path": str(target),
                 "variable": variable,
             }
@@ -86,6 +87,7 @@ def render_distribution(context: dict, request, specification: dict) -> None:
                 context["artifacts"].append(
                     {
                         "kind": request.kind,
+                        "name": request.name,
                         "path": str(target),
                         "variable": variable,
                         "operator": operator,
@@ -129,6 +131,7 @@ def render_bar_compare(context: dict, request, specification: dict) -> None:
             context["artifacts"].append(
                 {
                     "kind": request.kind,
+                    "name": request.name,
                     "path": str(target),
                     "variable": variable,
                     "operator": operator,
