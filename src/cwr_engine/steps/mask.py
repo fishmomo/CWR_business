@@ -93,10 +93,22 @@ def _build_shp_mask(context: dict) -> xr.DataArray:
     dataset = context["prepared_dataset"]
     payload = task.region_spec.payload
     shp_path = _resolve_path(payload["path"], context["task_path"])
-    geometry = _load_shp_geometry(shp_path, payload)
     sample = dataset[next(iter(dataset.data_vars))].isel(time=0)
-    lon_values = sample["lon"].values
-    lat_values = sample["lat"].values
+    return compile_shp_mask(
+        shp_path,
+        payload,
+        sample["lat"].values,
+        sample["lon"].values,
+    )
+
+
+def compile_shp_mask(
+    shp_path: Path,
+    payload: dict,
+    lat_values: np.ndarray,
+    lon_values: np.ndarray,
+) -> xr.DataArray:
+    geometry = _load_shp_geometry(shp_path, payload)
     mask = np.zeros((len(lat_values), len(lon_values)), dtype=bool)
     for lat_index, lat in enumerate(lat_values):
         for lon_index, lon in enumerate(lon_values):

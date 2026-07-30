@@ -3,9 +3,15 @@
   "task_id": "nmg-zxb-cloud-water-2025",
   "year": 2025,
   "region_name": "内蒙古中西部七盟市研究区",
-  "annual_csv": "../../artifacts/examples/nmg_zxb/csv/nmg-zxb_NCEP_00to25_Y.csv",
-  "monthly_csv": "../../artifacts/examples/nmg_zxb/csv/nmg-zxb_NCEP_00to25_M.csv",
-  "mask_nc": "../../artifacts/examples/nmg_zxb/mask/nmg-zxb.nc",
-  "spatial_nc": "../../artifacts/examples/nmg_zxb/pic/2025/nmg-zxb_picdata.nc",
+  "product_source": {
+    "root": "H:\\result_china\\NCEP",
+    "engine": "h5netcdf"
+  },
+  "region_spec": {
+    "kind": "shp",
+    "payload": {
+      "path": "../../data/inputs/内蒙古中西部/内蒙古中西部_7盟市融合研究区.shp"
+    }
+  },
   "output_root": "../../artifacts/runs/nmg-zxb-business-metrics-2025"
 }

@@ -2,9 +2,9 @@
 
 ## Purpose
 
-The `cloud_water_single_year` metric workflow converts retained annual and
-monthly regional tables plus the spatial composite inputs into two standardized
-artifacts:
+The `cloud_water_single_year` metric workflow reads the authoritative annual
+and monthly product catalogs and compiles the requested region into two
+standardized artifacts:
 
 - A schema-versioned `business_metrics` JSON document.
 - A normalized `spatial_composite` NetCDF document containing the region mask.
@@ -21,15 +21,31 @@ spatial NetCDF paths.
   "task_id": "nmg-zxb-cloud-water-2025",
   "year": 2025,
   "region_name": "内蒙古中西部七盟市研究区",
-  "annual_csv": "nmg-zxb_NCEP_00to25_Y.csv",
-  "monthly_csv": "nmg-zxb_NCEP_00to25_M.csv",
-  "mask_nc": "nmg-zxb.nc",
-  "spatial_nc": "nmg-zxb_picdata.nc",
+  "product_source": {
+    "root": "H:\\result_china\\NCEP",
+    "engine": "h5netcdf"
+  },
+  "region_spec": {
+    "kind": "shp",
+    "payload": {
+      "path": "region.shp"
+    }
+  },
   "output_root": "artifacts/runs/nmg-zxb-business-metrics-2025"
 }
 ```
 
 Relative paths resolve from the build-specification directory.
+
+`region_spec` supports `shp`, `existing_mask`, and `bbox`, using the same
+region semantics as standard engine tasks. The direct cloud-water profile reads
+one official annual product and all twelve official monthly products. It does
+not resample daily data because no current single-year report metric requires
+daily input.
+
+The former `annual_csv`, `monthly_csv`, `mask_nc`, and `spatial_nc` input set
+remains available only as an all-or-nothing retained-artifact compatibility
+mode.
 
 ## Artifacts
 
@@ -42,19 +58,28 @@ The metrics JSON uses `schema_version: 1` and records:
   plus totals.
 - The expected spatial-composite artifact name, mask, and variables.
 
-The spatial NetCDF contains `ind_area_bool` and the retained `pic3_*`,
-`pic4_*`, and `pic5_*` composite variables. Large gridded arrays are not
-embedded in JSON.
+The spatial NetCDF contains the compiled `ind_area_bool` mask and directly
+derived `pic3_*`, `pic4_*`, and `pic5_*` composite variables. Large gridded
+arrays are not embedded in JSON.
 
 Equivalent monthly and seasonal depths use the annual regional `dxy`, matching
 the retained single-year calculation.
 
+## Inner Mongolia Reference Note
+
+The retained 2025 regional CSV values match a fresh compilation of the source
+SHP with 52 selected product-grid cells. The separately retained mask contains
+72 selected cells, so it is not the mask that produced those CSV values. The
+direct-product workflow recompiles the SHP and consistently uses the resulting
+52-cell mask for regional, boundary, and spatial metrics. Retained artifacts
+remain unchanged and are supported only through compatibility mode.
+
 ## Failure Rules
 
 The workflow validates all source files before creating formal artifacts. It
-fails for a missing or duplicate annual row, missing or duplicate month,
-missing column, non-finite number, zero area, missing spatial variable,
-incompatible mask/grid shape, or unsupported NetCDF format.
+fails for missing or duplicate annual/monthly products, missing variables,
+non-finite regional or boundary values, zero area, an empty region, an
+incompatible mask/product grid, or an unsupported NetCDF format.
 
 ## Command
 

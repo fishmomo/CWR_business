@@ -328,14 +328,84 @@ removal and additional business metric profiles require a separate stage.
 
 The acceptance checks pass. No subsequent stage is active.
 
-## Next planned stage: direct product-derived business metrics
+## Completed stage: direct product-derived business metrics
 
-Status: planned, not active.
+Status: completed on 2026-07-30.
 
-### Intended outcome
+### Outcome
 
 Derive annual, monthly, seasonal, boundary-flow, and spatial-composite business
 metrics directly from the authoritative day/month/year product catalogs and
 the compiled region mask. This removes the metrics builder's remaining
 ingestion dependency on retained regional CSV and spatial-analysis NetCDF
 files.
+
+### Included
+
+- Discover exactly one requested annual product and all twelve requested
+  monthly products from the `Y/M` catalog directories.
+- Compile `shp`, existing-mask, or bounding-box region specifications on the
+  product grid.
+- Compute annual regional metrics and directional boundary transport directly
+  from product variables.
+- Compute monthly and seasonal metrics from official monthly products without
+  cross-scale resampling.
+- Derive the single-year spatial composite directly from annual and monthly
+  gridded products.
+- Preserve the retained CSV/spatial-input builder as an explicitly named
+  compatibility path.
+
+### Excluded
+
+- Reading daily products when no accepted single-year metric uses daily data.
+- Recreating the five historical figure layouts.
+- Correcting or overwriting retained historical artifacts that used a
+  different mask.
+- Additional business profiles, multi-year reports, PDF, GUI, and Web UI.
+
+### Acceptance
+
+- Synthetic products verify regional aggregation, segmented directional
+  boundaries, annual fields, and seasonal spatial composites.
+- Missing products, variables, invalid values, empty masks, and incompatible
+  grids fail before formal artifacts are written.
+- The real 2025 annual spatial fields match the authoritative NCEP product
+  exactly.
+- One mask compiled from the retained SHP is used consistently for regional,
+  boundary, and spatial metrics.
+- A real Inner Mongolia 2025 report is generated from direct-product metrics
+  with no unresolved slots.
+- The full test suite passes in `cwr_py312`.
+
+### Stop condition
+
+The stage ends after direct-product artifacts and the real single-year report
+pass structural and formula-based acceptance and are committed. Figure
+regeneration and historical-artifact correction require separate stages.
+
+The acceptance checks pass. The real run selected 52 cells from the source
+SHP, read one annual and twelve monthly products, and produced all 13 spatial
+composite fields without reading daily data. Annual values match the retained
+CSV exactly except for a 0.5 kg floating-point summation difference in `GMv`;
+the largest boundary difference is 0.125 kg, and the spatial-field maximum
+absolute difference is zero. The retained standalone 72-cell mask is preserved
+as historical data and is not used by the direct workflow. The generated
+report contains 58 paragraphs, two tables, five images, and no unresolved text
+slots. The full suite passes with 60 tests in `cwr_py312`.
+
+## Next planned stage: standard figure regeneration
+
+Status: planned, not active.
+
+### Outcome
+
+Regenerate the five single-year report figures from standardized direct-product
+artifacts and the corrected compiled mask. This removes the report's final
+runtime dependency on retained historical PNG files while preserving the
+accepted business layout and narrative semantics.
+
+### Stop condition
+
+The stage ends after all five figures pass data, layout, and real-report
+acceptance and the implementation is committed. Multi-year reports, PDF,
+GUI, and Web UI remain outside that stage.
