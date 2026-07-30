@@ -8,6 +8,9 @@ import numpy as np
 import pytest
 import xarray as xr
 
+from cwr_engine.business_metrics.cloud_water import (
+    build_cloud_water_business_metrics,
+)
 from cwr_report.profiles.cloud_water_single_year import (
     IMAGE_SLOTS,
     TEXT_SLOT_NAMES,
@@ -197,6 +200,164 @@ def test_cloud_water_profile_rejects_missing_month_without_output(tmp_path: Path
         build_cloud_water_single_year_report(profile_path)
 
     assert not (tmp_path / "output" / "report.docx").exists()
+
+
+def test_business_metrics_are_indexed_and_drive_equivalent_report(
+    tmp_path: Path,
+):
+    compatibility_profile_path = _write_profile_case(tmp_path)
+    compatibility_profile = json.loads(
+        compatibility_profile_path.read_text(encoding="utf-8")
+    )
+    compatibility_output = build_cloud_water_single_year_report(
+        compatibility_profile_path
+    )
+
+    metrics_spec_path = tmp_path / "metrics-spec.json"
+    metrics_spec_path.write_text(
+        json.dumps(
+            {
+                "metric_profile": "cloud_water_single_year",
+                "task_id": "cloud-water-metrics-2025",
+                "year": 2025,
+                "region_name": "测试区域",
+                "annual_csv": compatibility_profile["annual_csv"],
+                "monthly_csv": compatibility_profile["monthly_csv"],
+                "mask_nc": compatibility_profile["mask_nc"],
+                "spatial_nc": compatibility_profile["spatial_nc"],
+                "output_root": "metrics-run",
+            },
+            ensure_ascii=False,
+        ),
+        encoding="utf-8",
+    )
+    report_inputs_path = build_cloud_water_business_metrics(metrics_spec_path)
+    report_inputs = json.loads(
+        report_inputs_path.read_text(encoding="utf-8")
+    )
+    assert [item["kind"] for item in report_inputs["artifacts"]] == [
+        "business_metrics",
+        "spatial_composite",
+    ]
+
+    metrics_path = Path(report_inputs["artifacts"][0]["path"])
+    metrics = json.loads(metrics_path.read_text(encoding="utf-8"))
+    assert metrics["schema_version"] == 1
+    assert len(metrics["monthly"]) == 12
+    assert metrics["seasons"]["spring"]["months"] == [3, 4, 5]
+    assert metrics["seasons"]["spring"]["SP_mm"] == pytest.approx(12.0)
+    assert metrics["boundaries"]["water_vapor"][-1] == {
+        "boundary": "total",
+        "input": 100.0,
+        "output": 95.0,
+        "net_input": 5.0,
+    }
+
+    standardized_profile = {
+        key: value
+        for key, value in compatibility_profile.items()
+        if key
+        not in {
+            "report_id",
+            "year",
+            "region_name",
+            "annual_csv",
+            "monthly_csv",
+            "mask_nc",
+            "spatial_nc",
+        }
+    }
+    standardized_profile["report_inputs"] = str(report_inputs_path)
+    standardized_profile["output"] = "standard-output/report.docx"
+    standardized_profile_path = tmp_path / "standard-profile.json"
+    standardized_profile_path.write_text(
+        json.dumps(standardized_profile, ensure_ascii=False),
+        encoding="utf-8",
+    )
+
+    standardized_output = build_cloud_water_single_year_report(
+        standardized_profile_path
+    )
+    compatibility_document = Document(compatibility_output)
+    standardized_document = Document(standardized_output)
+    assert [
+        paragraph.text for paragraph in standardized_document.paragraphs
+    ] == [paragraph.text for paragraph in compatibility_document.paragraphs]
+    assert [
+        [[cell.text for cell in row.cells] for row in table.rows]
+        for table in standardized_document.tables
+    ] == [
+        [[cell.text for cell in row.cells] for row in table.rows]
+        for table in compatibility_document.tables
+    ]
+    assert len(standardized_document.inline_shapes) == 5
+
+
+def test_business_metrics_fail_before_artifacts_for_missing_month(
+    tmp_path: Path,
+):
+    profile_path = _write_profile_case(tmp_path)
+    profile = json.loads(profile_path.read_text(encoding="utf-8"))
+    monthly_path = Path(profile["monthly_csv"])
+    rows = list(csv.DictReader(monthly_path.open(encoding="utf-8")))
+    _write_csv(monthly_path, rows[:-1])
+    metrics_spec_path = tmp_path / "metrics-spec.json"
+    metrics_spec_path.write_text(
+        json.dumps(
+            {
+                "metric_profile": "cloud_water_single_year",
+                "task_id": "cloud-water-metrics-2025",
+                "year": 2025,
+                "region_name": "测试区域",
+                "annual_csv": profile["annual_csv"],
+                "monthly_csv": profile["monthly_csv"],
+                "mask_nc": profile["mask_nc"],
+                "spatial_nc": profile["spatial_nc"],
+                "output_root": "metrics-run",
+            },
+            ensure_ascii=False,
+        ),
+        encoding="utf-8",
+    )
+
+    with pytest.raises(ValueError, match="missing months"):
+        build_cloud_water_business_metrics(metrics_spec_path)
+
+    assert not (tmp_path / "metrics-run").exists()
+
+
+def test_business_metrics_reject_coordinate_mismatch_before_artifacts(
+    tmp_path: Path,
+):
+    profile_path = _write_profile_case(tmp_path)
+    profile = json.loads(profile_path.read_text(encoding="utf-8"))
+    mask_path = Path(profile["mask_nc"])
+    with xr.open_dataset(mask_path, engine="scipy") as source:
+        mismatched_mask = source.load().assign_coords(lon=[99.0, 100.0, 101.0])
+    mismatched_mask.to_netcdf(mask_path, engine="scipy")
+    metrics_spec_path = tmp_path / "metrics-spec.json"
+    metrics_spec_path.write_text(
+        json.dumps(
+            {
+                "metric_profile": "cloud_water_single_year",
+                "task_id": "cloud-water-metrics-2025",
+                "year": 2025,
+                "region_name": "测试区域",
+                "annual_csv": profile["annual_csv"],
+                "monthly_csv": profile["monthly_csv"],
+                "mask_nc": profile["mask_nc"],
+                "spatial_nc": profile["spatial_nc"],
+                "output_root": "metrics-run",
+            },
+            ensure_ascii=False,
+        ),
+        encoding="utf-8",
+    )
+
+    with pytest.raises(ValueError, match="coordinates are incompatible"):
+        build_cloud_water_business_metrics(metrics_spec_path)
+
+    assert not (tmp_path / "metrics-run").exists()
 
 
 def _write_csv(path: Path, rows: list[dict]) -> None:

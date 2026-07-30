@@ -267,9 +267,9 @@ not begin within this stage.
 
 The acceptance checks pass. No subsequent stage is active.
 
-## Active stage: standardized supplemental business metrics
+## Completed stage: standardized supplemental business metrics
 
-Status: active since 2026-07-28.
+Status: completed on 2026-07-30.
 
 ### Outcome
 
@@ -325,3 +325,17 @@ and spatial NetCDF inputs.
 The stage ends immediately after the standardized real-data report is
 structurally verified and the implementation is committed. Compatibility-path
 removal and additional business metric profiles require a separate stage.
+
+The acceptance checks pass. No subsequent stage is active.
+
+## Next planned stage: direct product-derived business metrics
+
+Status: planned, not active.
+
+### Intended outcome
+
+Derive annual, monthly, seasonal, boundary-flow, and spatial-composite business
+metrics directly from the authoritative day/month/year product catalogs and
+the compiled region mask. This removes the metrics builder's remaining
+ingestion dependency on retained regional CSV and spatial-analysis NetCDF
+files.

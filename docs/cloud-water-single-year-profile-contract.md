@@ -6,33 +6,25 @@ The `cloud_water_single_year` profile adapts the retained
 `Simple-Year_Evaluation_Report-xizang-cm.docx` template. It is an upper-layer
 report product and does not invoke generalized computation steps.
 
-The profile requires a successful standard `report_inputs.json` for task
-identity and report-year consistency. Until boundary-flow metrics and
-report-specific spatial composites are standard engine artifacts, the profile
-also declares these supplemental inputs explicitly:
+The profile requires a successful standard `report_inputs.json` that indexes
+exactly one `cloud_water_single_year` business-metrics artifact and one spatial
+composite. Task identity, report year, region name, annual/monthly values,
+boundary metrics, and spatial variables are resolved from those artifacts.
 
-- One annual regional CSV.
-- One monthly regional CSV containing all twelve months.
-- One region-mask NetCDF.
-- One single-year spatial-analysis NetCDF.
-- Five figure files matching the retained template.
+The report profile directly declares only the retained template, output, and
+five figure files. It does not receive the source CSV, mask, or source spatial
+NetCDF paths.
 
-The supplemental files are transitional, visible dependencies. They are not
-described as generalized engine outputs.
+The former supplemental-input specification remains available as a
+compatibility path during this stage. It must declare all four keys together:
+`annual_csv`, `monthly_csv`, `mask_nc`, and `spatial_nc`.
 
 ## Profile Specification
 
 ```json
 {
   "profile": "cloud_water_single_year",
-  "report_id": "nmg-zxb-2025",
-  "year": 2025,
-  "region_name": "内蒙古中西部七盟市研究区",
   "report_inputs": "run/report_inputs/report_inputs.json",
-  "annual_csv": "annual.csv",
-  "monthly_csv": "monthly.csv",
-  "mask_nc": "mask.nc",
-  "spatial_nc": "single-year-picdata.nc",
   "template": "Simple-Year_Evaluation_Report-xizang-cm.docx",
   "output": "report.docx",
   "image_width_inches": 4.0,
@@ -63,10 +55,9 @@ Relative paths resolve from the profile specification directory.
 
 ## Failure Rules
 
-The profile fails without a DOCX when the standard task is unsuccessful or
-does not cover the report year; the annual year is missing or duplicated; any
-month is missing or duplicated; a required CSV column or spatial variable is
-missing; mask and grid shapes differ; an image is missing; or any template slot
+The profile fails without a DOCX when the standard task is unsuccessful; the
+required indexed artifacts are missing, duplicated, or incompatible; any month
+or required metric is missing; an image is missing; or any template slot
 remains unresolved.
 
 ## Command

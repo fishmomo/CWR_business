@@ -34,6 +34,13 @@ The retained single-year cloud-water business template is supported through
 the explicit profile contract in
 `docs/cloud-water-single-year-profile-contract.md`.
 
+Build its standardized supplemental metrics first, as documented in
+`docs/cloud-water-business-metrics-contract.md`.
+
+```powershell
+conda run -n cwr_py312 cwr-engine --business-metrics-spec path/to/metrics.json
+```
+
 ```powershell
 conda run -n cwr_py312 cwr-report --profile-spec path/to/profile.json
 ```

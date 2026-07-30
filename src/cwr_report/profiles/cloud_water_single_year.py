@@ -131,10 +131,11 @@ class CloudWaterProfileSpec:
     year: int
     region_name: str
     report_inputs: Path
-    annual_csv: Path
-    monthly_csv: Path
-    mask_nc: Path
+    annual_csv: Path | None
+    monthly_csv: Path | None
+    mask_nc: Path | None
     spatial_nc: Path
+    business_metrics: Path | None
     template: Path
     output: Path
     images: dict[str, Path]
@@ -213,12 +214,42 @@ def load_cloud_water_profile_spec(path: Path) -> CloudWaterProfileSpec:
     if payload.get("profile") != "cloud_water_single_year":
         raise ValueError("profile must be cloud_water_single_year")
     base = path.parent
-    year = payload.get("year")
-    if not isinstance(year, int) or isinstance(year, bool):
-        raise ValueError("year must be an integer")
-    region_name = payload.get("region_name")
-    if not isinstance(region_name, str) or not region_name.strip():
-        raise ValueError("region_name must be a non-empty string")
+    report_inputs = _existing_path(
+        base, payload.get("report_inputs"), "report_inputs"
+    )
+    supplemental_keys = {"annual_csv", "monthly_csv", "mask_nc", "spatial_nc"}
+    compatibility_mode = bool(supplemental_keys & set(payload))
+    if compatibility_mode and not supplemental_keys <= set(payload):
+        missing = sorted(supplemental_keys - set(payload))
+        raise ValueError(
+            f"Compatibility profile is missing supplemental input: {missing[0]}"
+        )
+    if compatibility_mode:
+        report_id = _required_text(payload, "report_id")
+        year = _required_year(payload)
+        region_name = _required_text(payload, "region_name")
+        annual_csv = _existing_path(
+            base, payload.get("annual_csv"), "annual_csv"
+        )
+        monthly_csv = _existing_path(
+            base, payload.get("monthly_csv"), "monthly_csv"
+        )
+        mask_nc = _existing_path(base, payload.get("mask_nc"), "mask_nc")
+        spatial_nc = _existing_path(
+            base, payload.get("spatial_nc"), "spatial_nc"
+        )
+        business_metrics = None
+    else:
+        (
+            report_id,
+            year,
+            region_name,
+            business_metrics,
+            spatial_nc,
+        ) = _standardized_profile_inputs(report_inputs)
+        annual_csv = None
+        monthly_csv = None
+        mask_nc = spatial_nc
     raw_images = payload.get("images")
     if not isinstance(raw_images, dict) or set(raw_images) != set(IMAGE_SLOTS):
         raise ValueError(f"images must contain exactly {IMAGE_SLOTS}")
@@ -240,18 +271,15 @@ def load_cloud_water_profile_spec(path: Path) -> CloudWaterProfileSpec:
     if output.resolve() == template.resolve():
         raise ValueError("output must not overwrite the template")
     return CloudWaterProfileSpec(
-        report_id=_required_text(payload, "report_id"),
+        report_id=report_id,
         year=year,
         region_name=region_name,
-        report_inputs=_existing_path(
-            base, payload.get("report_inputs"), "report_inputs"
-        ),
-        annual_csv=_existing_path(base, payload.get("annual_csv"), "annual_csv"),
-        monthly_csv=_existing_path(
-            base, payload.get("monthly_csv"), "monthly_csv"
-        ),
-        mask_nc=_existing_path(base, payload.get("mask_nc"), "mask_nc"),
-        spatial_nc=_existing_path(base, payload.get("spatial_nc"), "spatial_nc"),
+        report_inputs=report_inputs,
+        annual_csv=annual_csv,
+        monthly_csv=monthly_csv,
+        mask_nc=mask_nc,
+        spatial_nc=spatial_nc,
+        business_metrics=business_metrics,
         template=template,
         output=output,
         images=images,
@@ -262,30 +290,15 @@ def load_cloud_water_profile_spec(path: Path) -> CloudWaterProfileSpec:
 def derive_cloud_water_profile_data(
     spec: CloudWaterProfileSpec,
 ) -> CloudWaterProfileData:
-    annual_rows = _read_csv(spec.annual_csv, ANNUAL_COLUMNS)
-    annual_matches = [
-        row for row in annual_rows if _year(row["time"]) == spec.year
-    ]
-    if len(annual_matches) != 1:
-        raise ValueError(
-            f"annual_csv must contain exactly one row for {spec.year}"
-        )
-    annual = annual_matches[0]
-
-    monthly_rows = _read_csv(spec.monthly_csv, MONTHLY_COLUMNS)
-    months: dict[int, dict[str, str]] = {}
-    for row in monthly_rows:
-        if _year(row["time"]) != spec.year:
-            continue
-        month = _month(row["time"])
-        if month in months:
-            raise ValueError(f"monthly_csv has duplicate {spec.year}-{month:02d}")
-        months[month] = row
-    if set(months) != set(range(1, 13)):
-        missing = sorted(set(range(1, 13)) - set(months))
-        raise ValueError(f"monthly_csv is missing months: {missing}")
+    if spec.business_metrics:
+        metrics = _load_business_metrics(spec.business_metrics, spec.year)
+        annual, months = _legacy_rows_from_metrics(metrics)
+    else:
+        annual, months = _legacy_rows_from_supplemental_inputs(spec)
 
     text = _derive_scalar_text(spec, annual, months)
+    if spec.mask_nc is None:
+        raise ValueError("mask_nc is required for spatial analysis")
     spatial = _derive_spatial_text(spec.mask_nc, spec.spatial_nc)
     text.update(spatial)
     missing_text = sorted(TEXT_SLOT_NAMES - set(text))
@@ -298,6 +311,74 @@ def derive_cloud_water_profile_data(
         vapor_table=vapor_table,
         hydrometeor_table=hydrometeor_table,
     )
+
+
+def _legacy_rows_from_supplemental_inputs(
+    spec: CloudWaterProfileSpec,
+) -> tuple[dict[str, str], dict[int, dict[str, str]]]:
+    if spec.annual_csv is None or spec.monthly_csv is None:
+        raise ValueError("Compatibility profile requires annual and monthly CSV")
+    annual_rows = _read_csv(spec.annual_csv, ANNUAL_COLUMNS)
+    annual_matches = [
+        row for row in annual_rows if _year(row["time"]) == spec.year
+    ]
+    if len(annual_matches) != 1:
+        raise ValueError(
+            f"annual_csv must contain exactly one row for {spec.year}"
+        )
+    annual = annual_matches[0]
+
+    months: dict[int, dict[str, str]] = {}
+    for row in _read_csv(spec.monthly_csv, MONTHLY_COLUMNS):
+        if _year(row["time"]) != spec.year:
+            continue
+        month = _month(row["time"])
+        if month in months:
+            raise ValueError(f"monthly_csv has duplicate {spec.year}-{month:02d}")
+        months[month] = row
+    if set(months) != set(range(1, 13)):
+        missing = sorted(set(range(1, 13)) - set(months))
+        raise ValueError(f"monthly_csv is missing months: {missing}")
+    return annual, months
+
+
+def _legacy_rows_from_metrics(
+    metrics: dict[str, Any],
+) -> tuple[dict[str, Any], dict[int, dict[str, Any]]]:
+    annual = {
+        "time": f"{metrics['year']}-01-01",
+        **metrics["annual"]["values"],
+    }
+    prefixes = {
+        "water_vapor": ("INv", "OTv"),
+        "hydrometeor": ("INh", "OTh"),
+    }
+    side_codes = {"west": "W", "east": "E", "south": "S", "north": "N"}
+    for component, (incoming_prefix, outgoing_prefix) in prefixes.items():
+        rows = {
+            row["boundary"]: row
+            for row in metrics["boundaries"][component]
+            if row["boundary"] != "total"
+        }
+        for boundary, side in side_codes.items():
+            annual[f"{incoming_prefix}_{side}"] = (
+                float(rows[boundary]["input"]) * 1e11
+            )
+            annual[f"{outgoing_prefix}_{side}"] = (
+                float(rows[boundary]["output"]) * 1e11
+            )
+    months = {
+        int(row["month"]): {
+            "time": f"{metrics['year']}-{int(row['month']):02d}-01",
+            "SP": row["SP"],
+            "CWR": row["CWR"],
+            "dxy": row["dxy"],
+        }
+        for row in metrics["monthly"]
+    }
+    if set(months) != set(range(1, 13)):
+        raise ValueError("business_metrics must contain all twelve months")
+    return annual, months
 
 
 def _derive_scalar_text(
@@ -637,6 +718,145 @@ def _validate_standard_inputs(payload: dict, year: int) -> None:
         raise ValueError(f"Standard report_inputs does not cover year {year}")
 
 
+def _standardized_profile_inputs(
+    report_inputs_path: Path,
+) -> tuple[str, int, str, Path, Path]:
+    payload = json.loads(report_inputs_path.read_text(encoding="utf-8"))
+    if payload.get("schema_version", 1) != 1:
+        raise ValueError("Unsupported standard report_inputs schema version")
+    if payload.get("task", {}).get("status") != "success":
+        raise ValueError("Standard report_inputs task status must be success")
+    metrics_records = [
+        artifact
+        for artifact in payload.get("artifacts", [])
+        if artifact.get("kind") == "business_metrics"
+        and artifact.get("metric_profile") == "cloud_water_single_year"
+    ]
+    spatial_records = [
+        artifact
+        for artifact in payload.get("artifacts", [])
+        if artifact.get("kind") == "spatial_composite"
+        and artifact.get("metric_profile") == "cloud_water_single_year"
+    ]
+    if len(metrics_records) != 1:
+        raise ValueError(
+            "report_inputs must index exactly one cloud-water business_metrics"
+        )
+    if len(spatial_records) != 1:
+        raise ValueError(
+            "report_inputs must index exactly one cloud-water spatial_composite"
+        )
+    metrics_path = _artifact_path(report_inputs_path, metrics_records[0])
+    spatial_path = _artifact_path(report_inputs_path, spatial_records[0])
+    metrics = _load_business_metrics(metrics_path)
+    if payload["task"].get("task_id") != metrics["task_id"]:
+        raise ValueError(
+            "report_inputs task_id does not match business_metrics task_id"
+        )
+    expected_spatial_name = metrics.get("spatial_composite", {}).get(
+        "artifact_name"
+    )
+    if expected_spatial_name != spatial_records[0].get("name"):
+        raise ValueError(
+            "business_metrics spatial artifact name does not match "
+            "report_inputs"
+        )
+    return (
+        str(metrics["task_id"]),
+        int(metrics["year"]),
+        str(metrics["region_name"]),
+        metrics_path,
+        spatial_path,
+    )
+
+
+def _load_business_metrics(
+    path: Path,
+    expected_year: int | None = None,
+) -> dict[str, Any]:
+    payload = json.loads(path.read_text(encoding="utf-8"))
+    if payload.get("schema_version") != 1:
+        raise ValueError("Unsupported business_metrics schema version")
+    if payload.get("kind") != "business_metrics":
+        raise ValueError("business_metrics kind must be business_metrics")
+    if payload.get("metric_profile") != "cloud_water_single_year":
+        raise ValueError(
+            "business_metrics metric_profile must be cloud_water_single_year"
+        )
+    year = payload.get("year")
+    if not isinstance(year, int) or isinstance(year, bool):
+        raise ValueError("business_metrics year must be an integer")
+    if expected_year is not None and year != expected_year:
+        raise ValueError(
+            f"business_metrics year {year} does not match report year "
+            f"{expected_year}"
+        )
+    for key in ("task_id", "region_name", "annual", "monthly", "boundaries"):
+        if key not in payload:
+            raise ValueError(f"business_metrics is missing {key}")
+    annual_values = payload["annual"].get("values", {})
+    missing_annual = sorted(
+        {
+            "GMv",
+            "GMh",
+            "SP",
+            "CWR",
+            "PEh",
+            "PEv",
+            "PEw",
+            "RCv",
+            "RCh",
+            "dxy",
+        }
+        - set(annual_values)
+    )
+    if missing_annual:
+        raise ValueError(
+            f"business_metrics annual values are missing {missing_annual[0]}"
+        )
+    monthly = payload["monthly"]
+    if not isinstance(monthly, list) or len(monthly) != 12:
+        raise ValueError("business_metrics must contain twelve monthly records")
+    if {
+        int(row.get("month", -1)) for row in monthly if isinstance(row, dict)
+    } != set(range(1, 13)):
+        raise ValueError("business_metrics must contain months 1 through 12")
+    boundaries = payload["boundaries"]
+    if not {"water_vapor", "hydrometeor"} <= set(boundaries):
+        raise ValueError("business_metrics is missing boundary components")
+    for component in ("water_vapor", "hydrometeor"):
+        names = {
+            row.get("boundary")
+            for row in boundaries[component]
+            if isinstance(row, dict)
+        }
+        if names != {"west", "east", "south", "north", "total"}:
+            raise ValueError(
+                f"business_metrics {component} boundaries are incomplete"
+            )
+    return payload
+
+
+def _artifact_path(report_inputs_path: Path, artifact: dict[str, Any]) -> Path:
+    raw = artifact.get("path")
+    if not isinstance(raw, str) or not raw.strip():
+        raise ValueError("Indexed artifact path must be a non-empty string")
+    path = Path(raw)
+    candidates = (
+        [path]
+        if path.is_absolute()
+        else [
+            report_inputs_path.parent / path,
+            report_inputs_path.parent.parent / path,
+        ]
+    )
+    for candidate in candidates:
+        resolved = candidate.resolve()
+        if resolved.is_file():
+            return resolved
+    raise ValueError(f"Indexed artifact does not exist: {raw}")
+
+
 def _read_csv(path: Path, required: set[str]) -> list[dict[str, str]]:
     with path.open("r", encoding="utf-8-sig", newline="") as handle:
         reader = csv.DictReader(handle)
@@ -738,6 +958,13 @@ def _required_text(payload: dict, key: str) -> str:
     if not isinstance(value, str) or not value.strip():
         raise ValueError(f"{key} must be a non-empty string")
     return value
+
+
+def _required_year(payload: dict[str, Any]) -> int:
+    year = payload.get("year")
+    if not isinstance(year, int) or isinstance(year, bool):
+        raise ValueError("year must be an integer")
+    return year
 
 
 def _path(base: Path, payload: dict, key: str) -> Path:
