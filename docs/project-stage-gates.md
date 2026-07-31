@@ -462,6 +462,11 @@ could not run because LibreOffice is absent and the local Microsoft Office type
 library is damaged; structural and embedded-image checks were used as the
 document-skill fallback. The full suite passes with 60 tests in `cwr_py312`.
 
+A corrective visual pass on 2026-07-31 changed SHP maps from pre-contour
+grid-mask `NaN` handling to full-field contouring followed by polygon clipping.
+It also added proportional map padding, especially for the region preview.
+The synthetic direct-product test now exercises the SHP clipping path.
+
 ## Next planned stage: single-year end-to-end orchestration
 
 Status: planned, not active.

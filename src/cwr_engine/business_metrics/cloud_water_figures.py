@@ -7,6 +7,8 @@ import matplotlib
 
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
+from matplotlib.patches import PathPatch
+from matplotlib.path import Path as MatplotlibPath
 from matplotlib.ticker import FuncFormatter
 import numpy as np
 import xarray as xr
@@ -80,7 +82,14 @@ def _render_region_preview(
                 label="source region",
             )
         ax.plot([], [], color="#1756d3", linewidth=1.8, label="mask boundary")
-        _configure_map_axis(ax, lon, lat, mask, geometry)
+        _configure_map_axis(
+            ax,
+            lon,
+            lat,
+            mask,
+            geometry,
+            padding=(0.12, 0.16),
+        )
         ax.grid(color="#c8c8c8", linewidth=0.7, alpha=0.8)
         ax.legend(loc="lower left", frameon=False, fontsize=9)
         _save(fig, target, dpi=180)
@@ -265,10 +274,15 @@ def _draw_map_panel(
 ):
     lon = spatial["lon"].values
     lat = spatial["lat"].values
-    data = np.where(mask, spatial[variable].values.astype(float), np.nan)
-    valid = data[mask]
+    source_data = spatial[variable].values.astype(float)
+    valid = source_data[mask]
     if not np.all(np.isfinite(valid)):
         raise ValueError(f"Spatial figure field {variable} is non-finite")
+    data = (
+        source_data
+        if geometry is not None
+        else np.where(mask, source_data, np.nan)
+    )
     panel_levels = levels if levels is not None else _levels(valid)
     contour = ax.contourf(
         lon,
@@ -279,6 +293,7 @@ def _draw_map_panel(
         extend="both",
     )
     if geometry is not None:
+        _clip_contour_to_geometry(ax, contour, geometry)
         _plot_geometry(ax, geometry, color="#4d4d4d", linewidth=0.8)
     else:
         _plot_mask_boundary(
@@ -289,7 +304,14 @@ def _draw_map_panel(
             color="#4d4d4d",
             linewidth=0.8,
         )
-    _configure_map_axis(ax, lon, lat, mask, geometry)
+    _configure_map_axis(
+        ax,
+        lon,
+        lat,
+        mask,
+        geometry,
+        padding=(0.035, 0.07),
+    )
     ax.set_title(title, loc="left", fontsize=11)
     if unit is not None:
         fig.colorbar(contour, ax=ax, label=unit, fraction=0.04, pad=0.025)
@@ -344,6 +366,44 @@ def _plot_geometry(
             zorder=4,
         )
         first = False
+
+
+def _clip_contour_to_geometry(ax, contour, geometry) -> None:
+    vertices: list[tuple[float, float]] = []
+    codes: list[int] = []
+    geometries = (
+        list(geometry.geoms)
+        if hasattr(geometry, "geoms")
+        else [geometry]
+    )
+    for item in geometries:
+        if not hasattr(item, "exterior"):
+            continue
+        for ring in [item.exterior, *item.interiors]:
+            coordinates = list(ring.coords)
+            if len(coordinates) < 3:
+                continue
+            vertices.extend((float(x), float(y)) for x, y in coordinates)
+            codes.extend(
+                [
+                    MatplotlibPath.MOVETO,
+                    *([MatplotlibPath.LINETO] * (len(coordinates) - 2)),
+                    MatplotlibPath.CLOSEPOLY,
+                ]
+            )
+    if not vertices:
+        raise ValueError("Region geometry has no polygon rings for clipping")
+    patch = PathPatch(
+        MatplotlibPath(vertices, codes),
+        transform=ax.transData,
+        facecolor="none",
+        edgecolor="none",
+    )
+    if hasattr(contour, "set_clip_path"):
+        contour.set_clip_path(patch)
+        return
+    for collection in contour.collections:
+        collection.set_clip_path(patch)
 
 
 def _plot_mask_boundary(
@@ -406,6 +466,8 @@ def _configure_map_axis(
     lat: np.ndarray,
     mask: np.ndarray,
     geometry,
+    *,
+    padding: tuple[float, float],
 ) -> None:
     lon_edges = _coordinate_edges(lon)
     lat_edges = _coordinate_edges(lat)
@@ -422,8 +484,18 @@ def _configure_map_axis(
         min_x, min_y, max_x, max_y = geometry.bounds
         lon_bounds = (min(min(lon_bounds), min_x), max(max(lon_bounds), max_x))
         lat_bounds = (min(min(lat_bounds), min_y), max(max(lat_bounds), max_y))
-    ax.set_xlim(float(min(lon_bounds)), float(max(lon_bounds)))
-    ax.set_ylim(float(min(lat_bounds)), float(max(lat_bounds)))
+    lon_span = max(lon_bounds) - min(lon_bounds)
+    lat_span = max(lat_bounds) - min(lat_bounds)
+    lon_pad = max(lon_span * padding[0], 0.25)
+    lat_pad = max(lat_span * padding[1], 0.25)
+    ax.set_xlim(
+        float(min(lon_bounds) - lon_pad),
+        float(max(lon_bounds) + lon_pad),
+    )
+    ax.set_ylim(
+        float(min(lat_bounds) - lat_pad),
+        float(max(lat_bounds) + lat_pad),
+    )
     ax.xaxis.set_major_formatter(FuncFormatter(lambda value, _: f"{value:g}°E"))
     ax.yaxis.set_major_formatter(FuncFormatter(lambda value, _: f"{value:g}°N"))
     ax.tick_params(labelsize=8, direction="out")

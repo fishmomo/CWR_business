@@ -6,6 +6,7 @@ from docx import Document
 import matplotlib.pyplot as plt
 import numpy as np
 import pytest
+import shapefile
 import xarray as xr
 
 from cwr_engine.business_metrics.cloud_water import (
@@ -432,11 +433,21 @@ def test_business_metrics_are_derived_directly_from_product_catalog(
             ),
             engine="scipy",
         )
-    mask_path = tmp_path / "direct-mask.nc"
-    xr.Dataset(
-        {"ind_area_bool": (("lat", "lon"), np.ones(shape, dtype=bool))},
-        coords={"lat": lat, "lon": lon},
-    ).to_netcdf(mask_path, engine="scipy")
+    shp_path = tmp_path / "direct-region.shp"
+    with shapefile.Writer(str(shp_path)) as writer:
+        writer.field("id", "N")
+        writer.poly(
+            [
+                [
+                    (99.5, 29.5),
+                    (99.5, 32.5),
+                    (102.5, 32.5),
+                    (102.5, 29.5),
+                    (99.5, 29.5),
+                ]
+            ]
+        )
+        writer.record(1)
     spec_path = tmp_path / "direct-metrics.json"
     spec_path.write_text(
         json.dumps(
@@ -450,10 +461,9 @@ def test_business_metrics_are_derived_directly_from_product_catalog(
                     "engine": "scipy",
                 },
                 "region_spec": {
-                    "kind": "existing_mask",
+                    "kind": "shp",
                     "payload": {
-                        "path": str(mask_path),
-                        "variable": "ind_area_bool",
+                        "path": str(shp_path),
                     },
                 },
                 "output_root": "direct-run",

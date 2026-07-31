@@ -72,6 +72,13 @@ seasonal precipitation distribution, and seasonal cloud-water-resource
 distribution. Figure rendering uses `Matplotlib` and the same compiled mask as
 the metrics and spatial artifacts.
 
+For an SHP region, spatial figures draw the complete gridded field first and
+then clip the contour set to the source polygon. Setting values outside the
+grid mask to `NaN` before contouring is reserved for `existing_mask` and
+`bbox` inputs that have no polygon geometry. Map extents include proportional
+padding outside the region bounds so boundaries and grid centers are not
+visually cramped.
+
 Equivalent monthly and seasonal depths use the annual regional `dxy`, matching
 the retained single-year calculation.
 
