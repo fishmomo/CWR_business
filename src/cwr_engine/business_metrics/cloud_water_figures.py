@@ -42,7 +42,6 @@ def render_cloud_water_figures(
         [f"pic4_{suffix}" for suffix in "abcd"],
         targets["target_image4"],
         zero_based=True,
-        tidy_colorbar=False,
     )
     _render_season_maps(
         spatial,
@@ -51,7 +50,6 @@ def render_cloud_water_figures(
         [f"pic5_{suffix}" for suffix in "abcd"],
         targets["target_image5"],
         zero_based=False,
-        tidy_colorbar=True,
     )
 
 
@@ -215,7 +213,6 @@ def _render_season_maps(
     target: Path,
     *,
     zero_based: bool,
-    tidy_colorbar: bool,
 ) -> None:
     missing = [name for name in variables if name not in spatial]
     if missing:
@@ -225,11 +222,7 @@ def _render_season_maps(
     values = np.concatenate(
         [spatial[name].values[mask].astype(float) for name in variables]
     )
-    levels = (
-        _tidy_colorbar_levels(values, zero_based=zero_based)
-        if tidy_colorbar
-        else _levels(values, zero_based=zero_based)
-    )
+    levels = _tidy_colorbar_levels(values, zero_based=zero_based)
     seasons = ["Spring", "Summer", "Autumn", "Winter"]
     fig = plt.figure(figsize=(11.4, 5.8))
     grid = fig.add_gridspec(
@@ -265,15 +258,10 @@ def _render_season_maps(
             contour,
             cax=colorbar_axis,
             label="mm",
-            ticks=levels if tidy_colorbar else None,
-            format=(
-                FuncFormatter(_tidy_colorbar_label)
-                if tidy_colorbar
-                else None
-            ),
+            ticks=levels,
+            format=FuncFormatter(_tidy_colorbar_label),
         )
-        if tidy_colorbar:
-            colorbar.update_ticks()
+        colorbar.update_ticks()
         _save(fig, target, dpi=180)
     finally:
         plt.close(fig)
@@ -302,7 +290,11 @@ def _draw_map_panel(
         if geometry is not None
         else np.where(mask, source_data, np.nan)
     )
-    panel_levels = levels if levels is not None else _levels(valid)
+    panel_levels = (
+        levels
+        if levels is not None
+        else _tidy_colorbar_levels(valid)
+    )
     contour = ax.contourf(
         lon,
         lat,
@@ -333,7 +325,16 @@ def _draw_map_panel(
     )
     ax.set_title(title, loc="left", fontsize=11)
     if unit is not None:
-        fig.colorbar(contour, ax=ax, label=unit, fraction=0.04, pad=0.025)
+        colorbar = fig.colorbar(
+            contour,
+            ax=ax,
+            label=unit,
+            fraction=0.04,
+            pad=0.025,
+            ticks=panel_levels,
+            format=FuncFormatter(_tidy_colorbar_label),
+        )
+        colorbar.update_ticks()
     return contour
 
 

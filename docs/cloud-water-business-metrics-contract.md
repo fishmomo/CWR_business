@@ -72,9 +72,10 @@ seasonal precipitation distribution, and seasonal cloud-water-resource
 distribution. Figure rendering uses `Matplotlib` and the same compiled mask as
 the metrics and spatial artifacts.
 
-The cloud-water-resource seasonal figure uses tidy shared colorbar levels.
-Values below 1000 display one decimal, while four- and five-digit ranges use
-hundred-aligned integer ticks.
+All spatial distribution figures use tidy colorbar levels. Values below 1000
+display one decimal, while four- and five-digit ranges use hundred-aligned
+integer ticks. Figure three applies the rule to each panel; figures four and
+five apply it to their shared seasonal colorbar.
 
 For an SHP region, spatial figures draw the complete gridded field first and
 then clip the contour set to the source polygon. Setting values outside the

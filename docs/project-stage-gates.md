@@ -581,6 +581,13 @@ the real range renders as `200.0` through `900.0`, and synthetic four/five-digit
 ranges are aligned to hundreds. The full suite passes with 61 tests in
 `cwr_py312`.
 
+A corrective plotting pass on 2026-07-31 promoted the tidy colorbar behavior
+from figure five to every spatial distribution figure. Figure three now uses
+tidy levels for each of its six panel colorbars, while figures four and five
+use the same rule for their shared colorbars. Real figure inspection confirms
+one-decimal labels below 1000 and hundred-aligned integer labels for four- and
+five-digit ranges. The full suite passes with 62 tests in `cwr_py312`.
+
 ## Next planned stage: multi-year report contract
 
 Status: planned, not active.
