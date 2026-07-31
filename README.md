@@ -34,7 +34,7 @@ The retained single-year cloud-water business template is supported through
 the explicit profile contract in
 `docs/cloud-water-single-year-profile-contract.md`.
 
-Build its standardized supplemental metrics first, as documented in
+Build its standardized direct-product metrics first, as documented in
 `docs/cloud-water-business-metrics-contract.md`.
 
 ```powershell

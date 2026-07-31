@@ -45,9 +45,9 @@ one official annual product and all twelve official monthly products. It does
 not resample daily data because no current single-year report metric requires
 daily input.
 
-The former `annual_csv`, `monthly_csv`, `mask_nc`, and `spatial_nc` input set
-remains available only as an all-or-nothing retained-artifact compatibility
-mode.
+The former `annual_csv`, `monthly_csv`, `mask_nc`, and `spatial_nc` input set is
+no longer accepted. The authoritative product catalog and a mandatory
+`region_spec` are the only supported inputs.
 
 ## Artifacts
 
@@ -72,6 +72,10 @@ seasonal precipitation distribution, and seasonal cloud-water-resource
 distribution. Figure rendering uses `Matplotlib` and the same compiled mask as
 the metrics and spatial artifacts.
 
+The cloud-water-resource seasonal figure uses tidy shared colorbar levels.
+Values below 1000 display one decimal, while four- and five-digit ranges use
+hundred-aligned integer ticks.
+
 For an SHP region, spatial figures draw the complete gridded field first and
 then clip the contour set to the source polygon. Setting values outside the
 grid mask to `NaN` before contouring is reserved for `existing_mask` and
@@ -89,7 +93,7 @@ SHP with 52 selected product-grid cells. The separately retained mask contains
 72 selected cells, so it is not the mask that produced those CSV values. The
 direct-product workflow recompiles the SHP and consistently uses the resulting
 52-cell mask for regional, boundary, and spatial metrics. Retained artifacts
-remain unchanged and are supported only through compatibility mode.
+remain unchanged as historical reference data and are not runtime inputs.
 
 ## Failure Rules
 

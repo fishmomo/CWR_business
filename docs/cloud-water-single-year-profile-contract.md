@@ -17,11 +17,9 @@ The standard report profile directly declares only the retained template and
 output. It does not receive the source CSV, mask, source spatial NetCDF, or
 historical figure paths.
 
-The former supplemental-input specification remains available as a
-compatibility path during this stage. It must declare all four keys together:
-`annual_csv`, `monthly_csv`, `mask_nc`, and `spatial_nc`, plus all five
-explicit image paths. Standard indexes created before figure regeneration can
-also use those explicit images as a temporary fallback.
+The former supplemental CSV/NetCDF inputs and explicit historical image paths
+are no longer accepted. Reports must consume the standardized artifacts and
+five `profile_image` records indexed by `report_inputs.json`.
 
 ## Profile Specification
 
@@ -55,8 +53,7 @@ Relative paths resolve from the profile specification directory.
 The profile fails without a DOCX when the standard task is unsuccessful; the
 required indexed artifacts are missing, duplicated, or incompatible; any month
 or required metric is missing; standard profile images are partial,
-duplicated, or missing on disk; no explicit compatibility images are
-available; or any template slot remains unresolved.
+duplicated, or missing on disk; or any template slot remains unresolved.
 
 ## Command
 

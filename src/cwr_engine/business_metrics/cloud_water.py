@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import csv
 from dataclasses import dataclass
 from datetime import date
 import json
@@ -104,17 +103,6 @@ DIRECT_MONTHLY_SOURCE_VARIABLES = [
         for side in ("W", "E", "N", "S")
     ],
 ]
-ANNUAL_COLUMNS = {
-    "time",
-    *ANNUAL_VARIABLES,
-    *{
-        f"{prefix}_{side}"
-        for prefixes in BOUNDARY_COMPONENTS.values()
-        for prefix in prefixes
-        for side in BOUNDARY_SIDES.values()
-    },
-}
-MONTHLY_COLUMNS = {"time", "SP", "CWR", "dxy"}
 NETCDF3_SIGNATURES = (b"CDF\x01", b"CDF\x02", b"CDF\x05")
 HDF5_SIGNATURE = b"\x89HDF\r\n\x1a\n"
 
@@ -124,12 +112,8 @@ class CloudWaterMetricsSpec:
     task_id: str
     year: int
     region_name: str
-    annual_csv: Path | None
-    monthly_csv: Path | None
-    mask_nc: Path | None
-    spatial_nc: Path | None
-    product_source: dict[str, Any] | None
-    region_spec: dict[str, Any] | None
+    product_source: dict[str, Any]
+    region_spec: dict[str, Any]
     output_root: Path
     artifact_name: str
 
@@ -159,8 +143,6 @@ def build_cloud_water_business_metrics(spec_path: Path) -> Path:
         )
         spatial.to_netcdf(temp_spatial, engine="scipy")
         if temp_figures:
-            if spec.region_spec is None:
-                raise ValueError("Direct figure generation requires region_spec")
             render_cloud_water_figures(
                 metrics,
                 spatial,
@@ -200,33 +182,18 @@ def load_cloud_water_metrics_spec(path: Path) -> CloudWaterMetricsSpec:
         raise ValueError("artifact_name must be a non-empty string")
     if Path(artifact_name).name != artifact_name:
         raise ValueError("artifact_name must not contain path separators")
-    direct_mode = "product_source" in payload
     retained_keys = {"annual_csv", "monthly_csv", "mask_nc", "spatial_nc"}
-    if direct_mode and retained_keys & set(payload):
+    if retained_keys & set(payload):
         raise ValueError(
-            "product_source cannot be combined with retained CSV/spatial inputs"
+            "Retained CSV/spatial metric inputs are no longer supported; "
+            "use product_source and region_spec"
         )
-    if direct_mode:
-        product_source = _product_source(base, payload.get("product_source"))
-        region_spec = _region_spec(base, payload.get("region_spec"))
-        annual_csv = monthly_csv = mask_nc = spatial_nc = None
-    else:
-        missing = sorted(retained_keys - set(payload))
-        if missing:
-            raise ValueError(f"Retained-input mode is missing {missing[0]}")
-        product_source = region_spec = None
-        annual_csv = _existing_path(base, payload, "annual_csv")
-        monthly_csv = _existing_path(base, payload, "monthly_csv")
-        mask_nc = _existing_path(base, payload, "mask_nc")
-        spatial_nc = _existing_path(base, payload, "spatial_nc")
+    product_source = _product_source(base, payload.get("product_source"))
+    region_spec = _region_spec(base, payload.get("region_spec"))
     return CloudWaterMetricsSpec(
         task_id=_required_text(payload, "task_id"),
         year=year,
         region_name=_required_text(payload, "region_name"),
-        annual_csv=annual_csv,
-        monthly_csv=monthly_csv,
-        mask_nc=mask_nc,
-        spatial_nc=spatial_nc,
         product_source=product_source,
         region_spec=region_spec,
         output_root=_path(base, payload, "output_root"),
@@ -237,24 +204,8 @@ def load_cloud_water_metrics_spec(path: Path) -> CloudWaterMetricsSpec:
 def derive_cloud_water_business_metrics(
     spec: CloudWaterMetricsSpec,
 ) -> tuple[dict[str, Any], xr.Dataset]:
-    if spec.product_source is not None:
-        annual, months, spatial = _derive_direct_product_inputs(spec)
-        input_mode = "product_catalog"
-    else:
-        if any(
-            path is None
-            for path in (
-                spec.annual_csv,
-                spec.monthly_csv,
-                spec.mask_nc,
-                spec.spatial_nc,
-            )
-        ):
-            raise ValueError("Retained-input mode requires all source paths")
-        annual = _select_annual_row(spec.annual_csv, spec.year)
-        months = _select_monthly_rows(spec.monthly_csv, spec.year)
-        spatial = _spatial_composite(spec.mask_nc, spec.spatial_nc)
-        input_mode = "retained_artifacts"
+    annual, months, spatial = _derive_direct_product_inputs(spec)
+    input_mode = "product_catalog"
     dxy = _number(annual, "dxy")
     if np.isclose(dxy, 0):
         raise ValueError("annual dxy must not be zero")
@@ -338,8 +289,6 @@ def derive_cloud_water_business_metrics(
 def _derive_direct_product_inputs(
     spec: CloudWaterMetricsSpec,
 ) -> tuple[dict[str, float | str], dict[int, dict[str, float | str]], xr.Dataset]:
-    if spec.product_source is None or spec.region_spec is None:
-        raise ValueError("Direct mode requires product_source and region_spec")
     annual_path, monthly_paths = _discover_direct_product_files(
         spec.product_source,
         spec.year,
@@ -741,36 +690,6 @@ def _coordinate_name(dataset: xr.Dataset, names: tuple[str, ...]) -> str:
     raise ValueError(f"Product is missing coordinate: {' or '.join(names)}")
 
 
-def _select_annual_row(path: Path, year: int) -> dict[str, str]:
-    matches = [
-        row
-        for row in _read_csv(path, ANNUAL_COLUMNS)
-        if _year(row["time"]) == year
-    ]
-    if len(matches) != 1:
-        raise ValueError(f"annual_csv must contain exactly one row for {year}")
-    return matches[0]
-
-
-def _select_monthly_rows(
-    path: Path,
-    year: int,
-) -> dict[int, dict[str, str]]:
-    months: dict[int, dict[str, str]] = {}
-    for row in _read_csv(path, MONTHLY_COLUMNS):
-        if _year(row["time"]) != year:
-            continue
-        month = _month(row["time"])
-        if month in months:
-            raise ValueError(f"monthly_csv has duplicate {year}-{month:02d}")
-        months[month] = row
-    expected = set(range(1, 13))
-    if set(months) != expected:
-        missing = sorted(expected - set(months))
-        raise ValueError(f"monthly_csv is missing months: {missing}")
-    return months
-
-
 def _boundary_metrics(
     annual: dict[str, str],
     incoming_prefix: str,
@@ -799,52 +718,6 @@ def _boundary_metrics(
     return rows
 
 
-def _spatial_composite(mask_path: Path, spatial_path: Path) -> xr.Dataset:
-    with _open_netcdf(mask_path) as mask_dataset:
-        mask_name = (
-            "ind_area_bool"
-            if "ind_area_bool" in mask_dataset
-            else next(iter(mask_dataset.data_vars))
-        )
-        mask = mask_dataset[mask_name].load().astype(bool)
-    with _open_netcdf(spatial_path) as spatial_dataset:
-        missing = sorted(set(SPATIAL_VARIABLES) - set(spatial_dataset.data_vars))
-        if missing:
-            raise ValueError(f"spatial_nc is missing variable: {missing[0]}")
-        if any(
-            spatial_dataset[name].shape != mask.shape for name in SPATIAL_VARIABLES
-        ):
-            raise ValueError("spatial_nc variables must match mask shape")
-        composite = spatial_dataset[SPATIAL_VARIABLES].load()
-
-    target = composite[SPATIAL_VARIABLES[0]]
-    if set(mask.dims) != set(target.dims):
-        raise ValueError("mask_nc and spatial_nc dimensions are incompatible")
-    mask = mask.transpose(*target.dims)
-    for dimension in target.dims:
-        if dimension in mask.coords and dimension in target.coords:
-            if not np.array_equal(
-                mask[dimension].values,
-                target[dimension].values,
-                equal_nan=True,
-            ):
-                raise ValueError(
-                    "mask_nc and spatial_nc coordinates are incompatible"
-                )
-    if any(
-        composite[name].dims != target.dims for name in SPATIAL_VARIABLES
-    ):
-        raise ValueError("spatial_nc variable dimensions are incompatible")
-    composite["ind_area_bool"] = mask
-    composite.attrs.update(
-        {
-            "schema_version": 1,
-            "metric_profile": PROFILE_NAME,
-        }
-    )
-    return composite
-
-
 def _artifact_targets(spec: CloudWaterMetricsSpec) -> dict[str, Path]:
     targets = {
         "metrics": (
@@ -859,17 +732,14 @@ def _artifact_targets(spec: CloudWaterMetricsSpec) -> dict[str, Path]:
         ),
         "report_inputs": spec.output_root / "report_inputs" / "report_inputs.json",
     }
-    if spec.product_source is not None:
-        targets.update(
-            {
-                f"figure_{index}": (
-                    spec.output_root
-                    / "profile_image"
-                    / f"{slot}.png"
-                )
-                for index, slot in enumerate(IMAGE_SLOTS, start=1)
-            }
-        )
+    targets.update(
+        {
+            f"figure_{index}": (
+                spec.output_root / "profile_image" / f"{slot}.png"
+            )
+            for index, slot in enumerate(IMAGE_SLOTS, start=1)
+        }
+    )
     return targets
 
 
@@ -906,8 +776,7 @@ def _report_inputs_payload(
                 }
             )
     workflow_steps = ["business_metrics"]
-    if spec.product_source is not None:
-        workflow_steps.append("profile_figures")
+    workflow_steps.append("profile_figures")
     workflow_steps.append("report_inputs")
     return {
         "schema_version": 1,
@@ -918,11 +787,7 @@ def _report_inputs_payload(
         },
         "inputs": {
             "metric_profile": PROFILE_NAME,
-            "metric_input_mode": (
-                "product_catalog"
-                if spec.product_source is not None
-                else "retained_artifacts"
-            ),
+            "metric_input_mode": "product_catalog",
             "time_slices": [
                 {"scale": "year", "year": spec.year, "label": str(spec.year)}
             ],
@@ -942,22 +807,14 @@ def _metrics_source(
     spec: CloudWaterMetricsSpec,
     input_mode: str,
 ) -> dict[str, Any]:
-    if spec.product_source is not None:
-        return {
-            "mode": input_mode,
-            "root": str(spec.product_source["root"]),
-            "annual_scale": "year",
-            "annual_product_count": 1,
-            "monthly_scale": "month",
-            "monthly_product_count": 12,
-            "region_kind": spec.region_spec["kind"] if spec.region_spec else None,
-        }
     return {
         "mode": input_mode,
-        "annual_csv": str(spec.annual_csv),
-        "monthly_csv": str(spec.monthly_csv),
-        "mask_nc": str(spec.mask_nc),
-        "spatial_nc": str(spec.spatial_nc),
+        "root": str(spec.product_source["root"]),
+        "annual_scale": "year",
+        "annual_product_count": 1,
+        "monthly_scale": "month",
+        "monthly_product_count": 12,
+        "region_kind": spec.region_spec["kind"],
     }
 
 
@@ -969,32 +826,6 @@ def _open_netcdf(path: Path) -> xr.Dataset:
     if signature == HDF5_SIGNATURE:
         return xr.open_dataset(path, engine="h5netcdf")
     raise ValueError(f"unsupported NetCDF file format: {path}")
-
-
-def _read_csv(path: Path, required: set[str]) -> list[dict[str, str]]:
-    with path.open("r", encoding="utf-8-sig", newline="") as handle:
-        reader = csv.DictReader(handle)
-        missing = sorted(required - set(reader.fieldnames or []))
-        if missing:
-            raise ValueError(f"{path.name} is missing column: {missing[0]}")
-        return list(reader)
-
-
-def _year(value: str) -> int:
-    try:
-        return int(str(value)[:4])
-    except ValueError as error:
-        raise ValueError(f"Invalid CSV time: {value}") from error
-
-
-def _month(value: str) -> int:
-    try:
-        month = int(str(value)[5:7])
-    except ValueError as error:
-        raise ValueError(f"Invalid monthly CSV time: {value}") from error
-    if month not in range(1, 13):
-        raise ValueError(f"Invalid monthly CSV time: {value}")
-    return month
 
 
 def _number(row: dict[str, str], key: str) -> float:
@@ -1020,13 +851,6 @@ def _path(base: Path, payload: dict[str, Any], key: str) -> Path:
         raise ValueError(f"{key} must be a non-empty path")
     path = Path(value)
     return path if path.is_absolute() else (base / path).resolve()
-
-
-def _existing_path(base: Path, payload: dict[str, Any], key: str) -> Path:
-    path = _path(base, payload, key)
-    if not path.is_file():
-        raise ValueError(f"{key} does not exist: {path}")
-    return path
 
 
 def _product_source(base: Path, value: Any) -> dict[str, Any]:

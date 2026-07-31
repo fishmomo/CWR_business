@@ -42,6 +42,7 @@ def render_cloud_water_figures(
         [f"pic4_{suffix}" for suffix in "abcd"],
         targets["target_image4"],
         zero_based=True,
+        tidy_colorbar=False,
     )
     _render_season_maps(
         spatial,
@@ -50,6 +51,7 @@ def render_cloud_water_figures(
         [f"pic5_{suffix}" for suffix in "abcd"],
         targets["target_image5"],
         zero_based=False,
+        tidy_colorbar=True,
     )
 
 
@@ -213,6 +215,7 @@ def _render_season_maps(
     target: Path,
     *,
     zero_based: bool,
+    tidy_colorbar: bool,
 ) -> None:
     missing = [name for name in variables if name not in spatial]
     if missing:
@@ -222,7 +225,11 @@ def _render_season_maps(
     values = np.concatenate(
         [spatial[name].values[mask].astype(float) for name in variables]
     )
-    levels = _levels(values, zero_based=zero_based)
+    levels = (
+        _tidy_colorbar_levels(values, zero_based=zero_based)
+        if tidy_colorbar
+        else _levels(values, zero_based=zero_based)
+    )
     seasons = ["Spring", "Summer", "Autumn", "Winter"]
     fig = plt.figure(figsize=(11.4, 5.8))
     grid = fig.add_gridspec(
@@ -254,7 +261,19 @@ def _render_season_maps(
             )
         if contour is None:
             raise ValueError("Seasonal figure produced no contour")
-        fig.colorbar(contour, cax=colorbar_axis, label="mm")
+        colorbar = fig.colorbar(
+            contour,
+            cax=colorbar_axis,
+            label="mm",
+            ticks=levels if tidy_colorbar else None,
+            format=(
+                FuncFormatter(_tidy_colorbar_label)
+                if tidy_colorbar
+                else None
+            ),
+        )
+        if tidy_colorbar:
+            colorbar.update_ticks()
         _save(fig, target, dpi=180)
     finally:
         plt.close(fig)
@@ -330,6 +349,44 @@ def _levels(values: np.ndarray, *, zero_based: bool = False) -> np.ndarray:
         lower -= spread
         upper += spread
     return np.linspace(lower, upper, 9)
+
+
+def _tidy_colorbar_levels(
+    values: np.ndarray,
+    *,
+    zero_based: bool = False,
+) -> np.ndarray:
+    levels = _levels(values, zero_based=zero_based)
+    lower = float(levels[0])
+    upper = float(levels[-1])
+    raw_step = (upper - lower) / 8
+    step = _nice_step(raw_step)
+    if np.max(np.abs(levels)) >= 1000:
+        step = max(100.0, step)
+    tidy_lower = np.floor(lower / step) * step
+    tidy_upper = np.ceil(upper / step) * step
+    return np.arange(
+        tidy_lower,
+        tidy_upper + step * 0.5,
+        step,
+        dtype=float,
+    )
+
+
+def _nice_step(value: float) -> float:
+    magnitude = 10 ** np.floor(np.log10(value))
+    fraction = value / magnitude
+    for candidate in (1.0, 2.0, 5.0, 10.0):
+        if fraction <= candidate:
+            return candidate * magnitude
+    return 10.0 * magnitude
+
+
+def _tidy_colorbar_label(value: float, _: int | None = None) -> str:
+    if abs(value) < 1000:
+        return f"{value:.1f}"
+    rounded = round(value / 100) * 100
+    return f"{rounded:.0f}"
 
 
 def _region_geometry(region_spec: dict[str, Any]):

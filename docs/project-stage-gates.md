@@ -525,9 +525,9 @@ DOCX contains 58 paragraphs, two tables, five images, and no unresolved slots.
 Failure-path tests preserve an existing published run after metrics have
 already completed. The full suite passes with 62 tests in `cwr_py312`.
 
-## Next planned stage: compatibility-path retirement
+## Completed stage: compatibility-path retirement
 
-Status: planned, not active.
+Status: completed on 2026-07-31.
 
 ### Outcome
 
@@ -537,8 +537,62 @@ examples that still require those paths, then remove only compatibility code
 that has no verified caller. Multi-year report implementation remains a
 separate later decision.
 
+### Included
+
+- Remove retained-artifact metric ingestion after confirming the direct
+  product workflow has replaced it.
+- Remove supplemental CSV/NetCDF and explicit historical PNG fallback from the
+  single-year report profile.
+- Remove compatibility-only runnable examples and tests while preserving
+  historical source artifacts as reference data.
+- Correct the accepted figure-five colorbar so sub-thousand ticks use one
+  decimal and four/five-digit ticks use clean hundred-aligned values.
+
+### Excluded
+
+- Deleting or rewriting retained historical data files.
+- Changing physical formulas, the report template, or the other four figures.
+- Multi-year reports, PDF conversion, GUI, Web UI, or scheduling.
+
+### Acceptance
+
+- The direct single-year workflow remains the only supported metric-to-report
+  path and passes its real 2025 acceptance run.
+- Figure five uses one-decimal labels for the real data and clean
+  hundred-aligned labels for synthetic four/five-digit ranges.
+- Removed compatibility keys fail clearly instead of silently selecting a
+  legacy branch.
+- The full test suite passes in `cwr_py312`.
+
 ### Stop condition
 
 The stage ends after every compatibility path has an explicit keep-or-remove
 decision, supported paths have regression coverage, unused paths are removed,
 the full suite passes, and the result is committed.
+
+The acceptance checks pass. Runtime ingestion of retained annual/monthly CSV,
+standalone mask/spatial NetCDF, and explicit historical PNG paths has been
+removed from the metrics and report profile. The compatibility-only examples
+and equivalence tests were retired; retained source artifacts and legacy
+configuration records remain unchanged as historical references. Old keys now
+fail with an explicit migration message. The real 2025 direct-product workflow
+still produces the complete report. Figure five now uses tidy colorbar levels:
+the real range renders as `200.0` through `900.0`, and synthetic four/five-digit
+ranges are aligned to hundreds. The full suite passes with 61 tests in
+`cwr_py312`.
+
+## Next planned stage: multi-year report contract
+
+Status: planned, not active.
+
+### Outcome
+
+Define the authoritative year-selection rules, cross-year comparison metrics,
+figure set, narrative semantics, template mapping, and output contract for one
+multi-year cloud-water report before implementation begins.
+
+### Stop condition
+
+The stage ends when the multi-year input, calculation, figure, report, and
+acceptance contracts are documented and approved. Implementation starts only
+as a separately activated stage.
