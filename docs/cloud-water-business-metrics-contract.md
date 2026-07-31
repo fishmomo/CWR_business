@@ -8,6 +8,8 @@ standardized artifacts:
 
 - A schema-versioned `business_metrics` JSON document.
 - A normalized `spatial_composite` NetCDF document containing the region mask.
+- Five `profile_image` PNG documents generated from those standard data
+  products.
 
 Both artifacts are indexed by one standard `report_inputs.json`. Report
 products consume that index and do not receive the source CSV or source
@@ -52,15 +54,23 @@ mode.
 The metrics JSON uses `schema_version: 1` and records:
 
 - Annual source values and equivalent depths.
-- Exactly twelve monthly `SP` and `CWR` values.
+- Exactly twelve monthly `SP`, `CWR`, `GMv`, `GMh`, `MC`, `CEv`, `RCh`, and
+  `PEh` values in direct-product mode.
 - Spring, summer, autumn, and winter summaries.
 - Water-vapor and hydrometeor input, output, and net input for four boundaries
   plus totals.
 - The expected spatial-composite artifact name, mask, and variables.
 
-The spatial NetCDF contains the compiled `ind_area_bool` mask and directly
-derived `pic3_*`, `pic4_*`, and `pic5_*` composite variables. Large gridded
-arrays are not embedded in JSON.
+The spatial NetCDF contains the compiled `ind_area_bool` mask and fourteen
+directly derived `pic3_*`, `pic4_*`, and `pic5_*` composite variables,
+including the annual `GMh` field required by the six-panel annual figure.
+Large gridded arrays are not embedded in JSON.
+
+Direct-product mode also writes five `profile_image` artifacts: the region and
+mask preview, monthly four-panel sequence, annual six-panel distribution,
+seasonal precipitation distribution, and seasonal cloud-water-resource
+distribution. Figure rendering uses `Matplotlib` and the same compiled mask as
+the metrics and spatial artifacts.
 
 Equivalent monthly and seasonal depths use the annual regional `dxy`, matching
 the retained single-year calculation.

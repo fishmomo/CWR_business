@@ -12,6 +12,10 @@ from typing import Any
 import numpy as np
 import xarray as xr
 
+from cwr_engine.business_metrics.cloud_water_figures import (
+    IMAGE_SLOTS,
+    render_cloud_water_figures,
+)
 from cwr_engine.steps.mask import compile_shp_mask
 
 
@@ -48,6 +52,7 @@ SPATIAL_VARIABLES = [
     "pic3_a",
     "pic3_b",
     "pic3_c",
+    "pic3_d",
     "pic3_e",
     "pic3_f",
     "pic4_a",
@@ -69,6 +74,7 @@ DIRECT_ANNUAL_SOURCE_VARIABLES = [
     "MC",
     "ME",
     "GMv",
+    "GMh",
     "CWR",
     "CEv",
     "PEh",
@@ -85,6 +91,8 @@ DIRECT_MONTHLY_SOURCE_VARIABLES = [
     "Mv0",
     "MvT",
     "Mh0",
+    "aveMv",
+    "aveMh",
     "MC",
     "ME",
     "CWR",
@@ -140,11 +148,25 @@ def build_cloud_water_business_metrics(spec_path: Path) -> Path:
         temp_metrics = temp / targets["metrics"].name
         temp_spatial = temp / targets["spatial"].name
         temp_report_inputs = temp / targets["report_inputs"].name
+        temp_figures = {
+            slot: temp / targets[f"figure_{index}"].name
+            for index, slot in enumerate(IMAGE_SLOTS, start=1)
+            if f"figure_{index}" in targets
+        }
         temp_metrics.write_text(
             json.dumps(metrics, ensure_ascii=False, indent=2),
             encoding="utf-8",
         )
         spatial.to_netcdf(temp_spatial, engine="scipy")
+        if temp_figures:
+            if spec.region_spec is None:
+                raise ValueError("Direct figure generation requires region_spec")
+            render_cloud_water_figures(
+                metrics,
+                spatial,
+                spec.region_spec,
+                temp_figures,
+            )
         temp_report_inputs.write_text(
             json.dumps(
                 _report_inputs_payload(spec, targets),
@@ -158,6 +180,9 @@ def build_cloud_water_business_metrics(spec_path: Path) -> Path:
             target.parent.mkdir(parents=True, exist_ok=True)
         temp_metrics.replace(targets["metrics"])
         temp_spatial.replace(targets["spatial"])
+        for index, slot in enumerate(IMAGE_SLOTS, start=1):
+            if slot in temp_figures:
+                temp_figures[slot].replace(targets[f"figure_{index}"])
         temp_report_inputs.replace(targets["report_inputs"])
     return targets["report_inputs"]
 
@@ -234,17 +259,33 @@ def derive_cloud_water_business_metrics(
     if np.isclose(dxy, 0):
         raise ValueError("annual dxy must not be zero")
 
-    monthly = [
-        {
+    monthly = []
+    for month in range(1, 13):
+        source = months[month]
+        row = {
             "month": month,
-            "SP": _number(months[month], "SP"),
-            "CWR": _number(months[month], "CWR"),
-            "dxy": _number(months[month], "dxy"),
-            "SP_mm": _number(months[month], "SP") / dxy,
-            "CWR_mm": _number(months[month], "CWR") / dxy,
+            "SP": _number(source, "SP"),
+            "CWR": _number(source, "CWR"),
+            "dxy": _number(source, "dxy"),
+            "SP_mm": _number(source, "SP") / dxy,
+            "CWR_mm": _number(source, "CWR") / dxy,
         }
-        for month in range(1, 13)
-    ]
+        optional = ("GMv", "GMh", "MC", "CEv", "RCh", "PEh")
+        if all(name in source for name in optional):
+            row.update(
+                {
+                    name: _number(source, name)
+                    for name in optional
+                }
+            )
+            row.update(
+                {
+                    "GMv_mm": row["GMv"] / dxy,
+                    "GMh_mm": row["GMh"] / dxy,
+                    "MC_mm": row["MC"] / dxy,
+                }
+            )
+        monthly.append(row)
     seasons = {
         season: {
             "months": season_months,
@@ -507,7 +548,17 @@ def _aggregate_direct_product(
     outgoing_hydro = sum(boundaries[f"OTh_{side}"] for side in "WENS")
     values = {
         name: _masked_sum(dataset[name].values, mask.values, name)
-        for name in ("Mv0", "MvT", "Mh0", "MC", "ME", "SP", "dxy")
+        for name in (
+            "Mv0",
+            "MvT",
+            "Mh0",
+            "aveMv",
+            "aveMh",
+            "MC",
+            "ME",
+            "SP",
+            "dxy",
+        )
     }
     storage_exchange = (
         (values["MvT"] - values["Mv0"])
@@ -537,25 +588,28 @@ def _aggregate_direct_product(
         "GMh": gmh,
         "SP": values["SP"],
         "CWR": cwr,
+        "MC": values["MC"],
+        "CEv": _rounded_ratio(values["MC"], gmv, 5, 100),
         "PEh": _rounded_ratio(values["SP"], gmh, 5, 100),
         "PEv": _rounded_ratio(values["SP"], gmv, 5, 100),
         "PEw": _rounded_ratio(values["SP"], gmv + gmh, 5, 100),
         "dxy": values["dxy"],
         **boundaries,
     }
-    if month is None:
-        ave_mv = _masked_sum(dataset["aveMv"].values, mask.values, "aveMv")
-        ave_mh = _masked_sum(dataset["aveMh"].values, mask.values, "aveMh")
-        result.update(
-            {
-                "RCv": _rounded_ratio(ave_mv, values["SP"] / days, 3),
-                "RCh": _rounded_ratio(
-                    ave_mh,
-                    values["SP"] / (days * 24),
-                    3,
-                ),
-            }
-        )
+    result.update(
+        {
+            "RCv": _rounded_ratio(
+                values["aveMv"],
+                values["SP"] / days,
+                3,
+            ),
+            "RCh": _rounded_ratio(
+                values["aveMh"],
+                values["SP"] / (days * 24),
+                3,
+            ),
+        }
+    )
     return result
 
 
@@ -577,6 +631,7 @@ def _direct_spatial_composite(
             "pic3_a": annual["GMv"] / dxy,
             "pic3_b": annual["CEv"],
             "pic3_c": annual["CWR"] / dxy,
+            "pic3_d": annual["GMh"] / dxy,
             "pic3_e": annual["SP"] / dxy,
             "pic3_f": annual["PEh"],
         },
@@ -791,7 +846,7 @@ def _spatial_composite(mask_path: Path, spatial_path: Path) -> xr.Dataset:
 
 
 def _artifact_targets(spec: CloudWaterMetricsSpec) -> dict[str, Path]:
-    return {
+    targets = {
         "metrics": (
             spec.output_root
             / "business_metrics"
@@ -804,12 +859,56 @@ def _artifact_targets(spec: CloudWaterMetricsSpec) -> dict[str, Path]:
         ),
         "report_inputs": spec.output_root / "report_inputs" / "report_inputs.json",
     }
+    if spec.product_source is not None:
+        targets.update(
+            {
+                f"figure_{index}": (
+                    spec.output_root
+                    / "profile_image"
+                    / f"{slot}.png"
+                )
+                for index, slot in enumerate(IMAGE_SLOTS, start=1)
+            }
+        )
+    return targets
 
 
 def _report_inputs_payload(
     spec: CloudWaterMetricsSpec,
     targets: dict[str, Path],
 ) -> dict[str, Any]:
+    artifacts = [
+        {
+            "kind": "business_metrics",
+            "name": spec.artifact_name,
+            "metric_profile": PROFILE_NAME,
+            "schema_version": 1,
+            "path": str(targets["metrics"]),
+        },
+        {
+            "kind": "spatial_composite",
+            "name": spec.artifact_name,
+            "metric_profile": PROFILE_NAME,
+            "schema_version": 1,
+            "path": str(targets["spatial"]),
+        },
+    ]
+    for index, slot in enumerate(IMAGE_SLOTS, start=1):
+        figure_key = f"figure_{index}"
+        if figure_key in targets:
+            artifacts.append(
+                {
+                    "kind": "profile_image",
+                    "name": slot,
+                    "metric_profile": PROFILE_NAME,
+                    "schema_version": 1,
+                    "path": str(targets[figure_key]),
+                }
+            )
+    workflow_steps = ["business_metrics"]
+    if spec.product_source is not None:
+        workflow_steps.append("profile_figures")
+    workflow_steps.append("report_inputs")
     return {
         "schema_version": 1,
         "task": {
@@ -829,25 +928,10 @@ def _report_inputs_payload(
             ],
             "region_name": spec.region_name,
         },
-        "artifacts": [
-            {
-                "kind": "business_metrics",
-                "name": spec.artifact_name,
-                "metric_profile": PROFILE_NAME,
-                "schema_version": 1,
-                "path": str(targets["metrics"]),
-            },
-            {
-                "kind": "spatial_composite",
-                "name": spec.artifact_name,
-                "metric_profile": PROFILE_NAME,
-                "schema_version": 1,
-                "path": str(targets["spatial"]),
-            },
-        ],
+        "artifacts": artifacts,
         "runtime": {
-            "workflow_steps": ["business_metrics", "report_inputs"],
-            "executed_steps": ["business_metrics", "report_inputs"],
+            "workflow_steps": workflow_steps,
+            "executed_steps": workflow_steps,
             "used_cache": [],
         },
         "stats": [],

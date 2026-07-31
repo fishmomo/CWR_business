@@ -108,7 +108,7 @@ def compile_shp_mask(
     lat_values: np.ndarray,
     lon_values: np.ndarray,
 ) -> xr.DataArray:
-    geometry = _load_shp_geometry(shp_path, payload)
+    geometry = load_shp_geometry(shp_path, payload)
     mask = np.zeros((len(lat_values), len(lon_values)), dtype=bool)
     for lat_index, lat in enumerate(lat_values):
         for lon_index, lon in enumerate(lon_values):
@@ -116,7 +116,7 @@ def compile_shp_mask(
     return xr.DataArray(mask, coords={"lat": lat_values, "lon": lon_values}, dims=("lat", "lon"), name="mask")
 
 
-def _load_shp_geometry(shp_path: Path, payload: dict):
+def load_shp_geometry(shp_path: Path, payload: dict):
     reader = shapefile.Reader(str(shp_path))
     geometries = [shape(item.__geo_interface__) for item in reader.shapes()]
     geometry = unary_union(geometries)

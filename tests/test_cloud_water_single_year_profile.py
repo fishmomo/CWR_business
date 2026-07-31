@@ -473,6 +473,12 @@ def test_business_metrics_are_derived_directly_from_product_catalog(
     assert metrics["input_mode"] == "product_catalog"
     assert metrics["source"]["annual_product_count"] == 1
     assert metrics["source"]["monthly_product_count"] == 12
+    assert metrics["monthly"][0]["GMv_mm"] == pytest.approx(96.0 / 900.0)
+    assert metrics["monthly"][0]["GMh_mm"] == pytest.approx(110.4 / 900.0)
+    assert metrics["monthly"][0]["MC_mm"] == pytest.approx(63.0 / 900.0)
+    assert metrics["monthly"][0]["CEv"] == pytest.approx(65.625)
+    assert metrics["monthly"][0]["PEh"] == pytest.approx(81.522)
+    assert metrics["monthly"][0]["RCh"] == pytest.approx(446.4)
     assert metrics["annual"]["values"]["dxy"] == 900.0
     assert metrics["annual"]["values"]["GMv"] == pytest.approx(96.0)
     assert metrics["annual"]["values"]["GMh"] == pytest.approx(110.4)
@@ -486,9 +492,43 @@ def test_business_metrics_are_derived_directly_from_product_catalog(
     spatial_path = Path(report_inputs["artifacts"][1]["path"])
     with xr.open_dataset(spatial_path, engine="scipy") as spatial:
         assert np.allclose(spatial["pic3_a"], 1.0)
+        assert np.allclose(spatial["pic3_d"], 0.2)
         assert np.allclose(spatial["pic4_a"], 0.3)
         assert np.allclose(spatial["pic5_d"], 0.3)
         assert bool(spatial["ind_area_bool"].all())
+    image_artifacts = [
+        item
+        for item in report_inputs["artifacts"]
+        if item["kind"] == "profile_image"
+    ]
+    assert [item["name"] for item in image_artifacts] == IMAGE_SLOTS
+    for artifact in image_artifacts:
+        image = plt.imread(artifact["path"])
+        assert image.shape[0] > 100
+        assert image.shape[1] > 100
+
+    report_case = tmp_path / "report-case"
+    report_case.mkdir()
+    compatibility_profile_path = _write_profile_case(report_case)
+    compatibility_profile = json.loads(
+        compatibility_profile_path.read_text(encoding="utf-8")
+    )
+    direct_profile_path = report_case / "direct-profile.json"
+    direct_profile_path.write_text(
+        json.dumps(
+            {
+                "profile": "cloud_water_single_year",
+                "report_inputs": str(report_inputs_path),
+                "template": compatibility_profile["template"],
+                "output": "direct-report.docx",
+                "image_width_inches": 3.0,
+            },
+            ensure_ascii=False,
+        ),
+        encoding="utf-8",
+    )
+    direct_report = build_cloud_water_single_year_report(direct_profile_path)
+    assert len(Document(direct_report).inline_shapes) == 5
 
 
 def test_direct_business_metrics_fail_before_artifacts_without_products(

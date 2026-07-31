@@ -8,16 +8,20 @@ report product and does not invoke generalized computation steps.
 
 The profile requires a successful standard `report_inputs.json` that indexes
 exactly one `cloud_water_single_year` business-metrics artifact and one spatial
-composite. Task identity, report year, region name, annual/monthly values,
-boundary metrics, and spatial variables are resolved from those artifacts.
+composite. When the index also contains the five standard `profile_image`
+artifacts, task identity, report year, region name, annual/monthly values,
+boundary metrics, spatial variables, and figures are all resolved from that
+single index.
 
-The report profile directly declares only the retained template, output, and
-five figure files. It does not receive the source CSV, mask, or source spatial
-NetCDF paths.
+The standard report profile directly declares only the retained template and
+output. It does not receive the source CSV, mask, source spatial NetCDF, or
+historical figure paths.
 
 The former supplemental-input specification remains available as a
 compatibility path during this stage. It must declare all four keys together:
-`annual_csv`, `monthly_csv`, `mask_nc`, and `spatial_nc`.
+`annual_csv`, `monthly_csv`, `mask_nc`, and `spatial_nc`, plus all five
+explicit image paths. Standard indexes created before figure regeneration can
+also use those explicit images as a temporary fallback.
 
 ## Profile Specification
 
@@ -27,14 +31,7 @@ compatibility path during this stage. It must declare all four keys together:
   "report_inputs": "run/report_inputs/report_inputs.json",
   "template": "Simple-Year_Evaluation_Report-xizang-cm.docx",
   "output": "report.docx",
-  "image_width_inches": 4.0,
-  "images": {
-    "target_image1": "mask.png",
-    "target_image2": "monthly.png",
-    "target_image3": "annual-spatial.png",
-    "target_image4": "seasonal-precipitation.png",
-    "target_image5": "seasonal-cloud-water.png"
-  }
+  "image_width_inches": 4.0
 }
 ```
 
@@ -57,8 +54,9 @@ Relative paths resolve from the profile specification directory.
 
 The profile fails without a DOCX when the standard task is unsuccessful; the
 required indexed artifacts are missing, duplicated, or incompatible; any month
-or required metric is missing; an image is missing; or any template slot
-remains unresolved.
+or required metric is missing; standard profile images are partial,
+duplicated, or missing on disk; no explicit compatibility images are
+available; or any template slot remains unresolved.
 
 ## Command
 

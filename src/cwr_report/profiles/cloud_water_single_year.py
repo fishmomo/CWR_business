@@ -239,6 +239,7 @@ def load_cloud_water_profile_spec(path: Path) -> CloudWaterProfileSpec:
             base, payload.get("spatial_nc"), "spatial_nc"
         )
         business_metrics = None
+        indexed_images = None
     else:
         (
             report_id,
@@ -246,17 +247,24 @@ def load_cloud_water_profile_spec(path: Path) -> CloudWaterProfileSpec:
             region_name,
             business_metrics,
             spatial_nc,
+            indexed_images,
         ) = _standardized_profile_inputs(report_inputs)
         annual_csv = None
         monthly_csv = None
         mask_nc = spatial_nc
-    raw_images = payload.get("images")
-    if not isinstance(raw_images, dict) or set(raw_images) != set(IMAGE_SLOTS):
-        raise ValueError(f"images must contain exactly {IMAGE_SLOTS}")
-    images = {
-        slot: _existing_path(base, raw_images[slot], f"images.{slot}")
-        for slot in IMAGE_SLOTS
-    }
+    if indexed_images is not None:
+        images = indexed_images
+    else:
+        raw_images = payload.get("images")
+        if (
+            not isinstance(raw_images, dict)
+            or set(raw_images) != set(IMAGE_SLOTS)
+        ):
+            raise ValueError(f"images must contain exactly {IMAGE_SLOTS}")
+        images = {
+            slot: _existing_path(base, raw_images[slot], f"images.{slot}")
+            for slot in IMAGE_SLOTS
+        }
     width = payload.get("image_width_inches", 4.0)
     if (
         not isinstance(width, (int, float))
@@ -720,7 +728,7 @@ def _validate_standard_inputs(payload: dict, year: int) -> None:
 
 def _standardized_profile_inputs(
     report_inputs_path: Path,
-) -> tuple[str, int, str, Path, Path]:
+) -> tuple[str, int, str, Path, Path, dict[str, Path] | None]:
     payload = json.loads(report_inputs_path.read_text(encoding="utf-8"))
     if payload.get("schema_version", 1) != 1:
         raise ValueError("Unsupported standard report_inputs schema version")
@@ -736,6 +744,12 @@ def _standardized_profile_inputs(
         artifact
         for artifact in payload.get("artifacts", [])
         if artifact.get("kind") == "spatial_composite"
+        and artifact.get("metric_profile") == "cloud_water_single_year"
+    ]
+    image_records = [
+        artifact
+        for artifact in payload.get("artifacts", [])
+        if artifact.get("kind") == "profile_image"
         and artifact.get("metric_profile") == "cloud_water_single_year"
     ]
     if len(metrics_records) != 1:
@@ -761,12 +775,34 @@ def _standardized_profile_inputs(
             "business_metrics spatial artifact name does not match "
             "report_inputs"
         )
+    indexed_images = None
+    if image_records:
+        names = [record.get("name") for record in image_records]
+        if len(image_records) != len(IMAGE_SLOTS) or set(names) != set(
+            IMAGE_SLOTS
+        ):
+            raise ValueError(
+                "report_inputs must index exactly five cloud-water "
+                "profile_image artifacts"
+            )
+        indexed_images = {
+            slot: _artifact_path(
+                report_inputs_path,
+                next(
+                    record
+                    for record in image_records
+                    if record.get("name") == slot
+                ),
+            )
+            for slot in IMAGE_SLOTS
+        }
     return (
         str(metrics["task_id"]),
         int(metrics["year"]),
         str(metrics["region_name"]),
         metrics_path,
         spatial_path,
+        indexed_images,
     )
 
 

@@ -393,9 +393,9 @@ as historical data and is not used by the direct workflow. The generated
 report contains 58 paragraphs, two tables, five images, and no unresolved text
 slots. The full suite passes with 60 tests in `cwr_py312`.
 
-## Next planned stage: standard figure regeneration
+## Completed stage: standard figure regeneration
 
-Status: planned, not active.
+Status: completed on 2026-07-31.
 
 ### Outcome
 
@@ -404,8 +404,78 @@ artifacts and the corrected compiled mask. This removes the report's final
 runtime dependency on retained historical PNG files while preserving the
 accepted business layout and narrative semantics.
 
+### Technology rule
+
+Use the mature existing stack: `xarray` and `NumPy` for data, `Shapely` for
+region geometry, and `Matplotlib` for headless PNG rendering. Add only a thin
+cloud-water figure adapter. Do not introduce a new plotting framework,
+workflow platform, or projection dependency within this stage.
+
+### Included
+
+- Add the missing annual `GMh` grid to the standardized spatial composite.
+- Standardize the monthly metrics required by the four-panel sequence figure.
+- Generate the region/mask preview, monthly sequence figure, annual six-panel
+  distribution figure, seasonal precipitation figure, and seasonal
+  cloud-water-resource figure.
+- Index all five figures as `profile_image` artifacts in
+  `report_inputs.json`.
+- Make the standardized single-year report resolve figures from
+  `report_inputs.json`; keep explicit historical images only as compatibility
+  fallback.
+
+### Excluded
+
+- Pixel-for-pixel reproduction of historical PNG files.
+- Cartographic basemaps or projections that require a new dependency.
+- Rewriting the retained historical figures or 72-cell mask.
+- Multi-year figures and reports, PDF, GUI, Web UI, and task scheduling.
+
+### Acceptance
+
+- Synthetic direct products verify all monthly figure metrics, the fourteenth
+  spatial field, five PNG artifacts, and report-input indexing.
+- Figure generation fails before formal artifacts are written when required
+  data are missing or invalid.
+- The real 2025 run uses one corrected 52-cell mask for metrics, spatial
+  fields, and figures.
+- The real single-year report is generated without an `images` configuration
+  and has five visible figures with no unresolved slots.
+- Figure PNGs and rendered report pages pass visual inspection.
+- The full test suite passes in `cwr_py312`.
+
 ### Stop condition
 
 The stage ends after all five figures pass data, layout, and real-report
 acceptance and the implementation is committed. Multi-year reports, PDF,
 GUI, and Web UI remain outside that stage.
+
+The acceptance checks pass with one documented environment limitation. The
+real run uses the corrected 52-cell mask, writes fourteen spatial fields and
+five indexed PNG figures, and generates the report without an `images`
+configuration. All fourteen spatial fields match the retained authoritative
+product-derived fields exactly. The largest monthly mass difference from the
+retained CSV is 0.125 kg; efficiency and residence-time fields match exactly.
+All five PNGs passed visual inspection, and the DOCX contains 58 paragraphs,
+two tables, five images, and no unresolved text slots. DOCX page rasterization
+could not run because LibreOffice is absent and the local Microsoft Office type
+library is damaged; structural and embedded-image checks were used as the
+document-skill fallback. The full suite passes with 60 tests in `cwr_py312`.
+
+## Next planned stage: single-year end-to-end orchestration
+
+Status: planned, not active.
+
+### Outcome
+
+Run product discovery, mask compilation, business metrics, standard figures,
+and DOCX assembly from one task specification and one command. Preserve the
+current component contracts while removing the manual handoff between the
+metrics and report commands.
+
+### Stop condition
+
+The stage ends after one transactional command reproduces the accepted real
+2025 report, failure leaves no partial formal outputs, the full suite passes,
+and the implementation is committed. Compatibility cleanup and multi-year
+work remain separate stages.

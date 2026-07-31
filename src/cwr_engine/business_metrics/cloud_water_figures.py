@@ -1,0 +1,434 @@
+from __future__ import annotations
+
+from pathlib import Path
+from typing import Any
+
+import matplotlib
+
+matplotlib.use("Agg")
+import matplotlib.pyplot as plt
+from matplotlib.ticker import FuncFormatter
+import numpy as np
+import xarray as xr
+
+from cwr_engine.steps.mask import load_shp_geometry
+
+
+IMAGE_SLOTS = [f"target_image{index}" for index in range(1, 6)]
+MAP_COLORMAP = "YlGnBu"
+
+
+def render_cloud_water_figures(
+    metrics: dict[str, Any],
+    spatial: xr.Dataset,
+    region_spec: dict[str, Any],
+    targets: dict[str, Path],
+) -> None:
+    if set(targets) != set(IMAGE_SLOTS):
+        raise ValueError("Cloud-water figure targets must contain five images")
+    mask = spatial["ind_area_bool"].values.astype(bool)
+    if not mask.any():
+        raise ValueError("Cloud-water figure mask contains no grid cells")
+    geometry = _region_geometry(region_spec)
+    _render_region_preview(spatial, mask, geometry, targets["target_image1"])
+    _render_monthly_sequence(metrics, targets["target_image2"])
+    _render_annual_maps(spatial, mask, geometry, targets["target_image3"])
+    _render_season_maps(
+        spatial,
+        mask,
+        geometry,
+        [f"pic4_{suffix}" for suffix in "abcd"],
+        targets["target_image4"],
+        zero_based=True,
+    )
+    _render_season_maps(
+        spatial,
+        mask,
+        geometry,
+        [f"pic5_{suffix}" for suffix in "abcd"],
+        targets["target_image5"],
+        zero_based=False,
+    )
+
+
+def _render_region_preview(
+    spatial: xr.Dataset,
+    mask: np.ndarray,
+    geometry,
+    target: Path,
+) -> None:
+    lon = spatial["lon"].values
+    lat = spatial["lat"].values
+    fig, ax = plt.subplots(figsize=(9.2, 3.6))
+    try:
+        selected_lat, selected_lon = np.where(mask)
+        ax.scatter(
+            lon[selected_lon],
+            lat[selected_lat],
+            s=18,
+            color="#d62728",
+            label="selected grid centers",
+            zorder=3,
+        )
+        _plot_mask_boundary(ax, lon, lat, mask, color="#1756d3", linewidth=1.8)
+        if geometry is not None:
+            _plot_geometry(
+                ax,
+                geometry,
+                color="#188f38",
+                linewidth=1.4,
+                label="source region",
+            )
+        ax.plot([], [], color="#1756d3", linewidth=1.8, label="mask boundary")
+        _configure_map_axis(ax, lon, lat, mask, geometry)
+        ax.grid(color="#c8c8c8", linewidth=0.7, alpha=0.8)
+        ax.legend(loc="lower left", frameon=False, fontsize=9)
+        _save(fig, target, dpi=180)
+    finally:
+        plt.close(fig)
+
+
+def _render_monthly_sequence(metrics: dict[str, Any], target: Path) -> None:
+    monthly = metrics.get("monthly", [])
+    if len(monthly) != 12:
+        raise ValueError("Monthly sequence figure requires twelve months")
+    required = {
+        "month",
+        "GMv_mm",
+        "CEv",
+        "GMh_mm",
+        "MC_mm",
+        "CWR_mm",
+        "SP_mm",
+        "RCh",
+        "PEh",
+    }
+    for row in monthly:
+        missing = sorted(required - set(row))
+        if missing:
+            raise ValueError(
+                f"Monthly sequence figure is missing metric {missing[0]}"
+            )
+        values = np.asarray([row[key] for key in required - {"month"}])
+        if not np.all(np.isfinite(values.astype(float))):
+            raise ValueError("Monthly sequence figure contains non-finite data")
+
+    panels = [
+        ("GMv_mm", "CEv", "GMv (mm)", "CEv (%)"),
+        ("GMh_mm", "MC_mm", "GMh (mm)", "MC (mm)"),
+        ("CWR_mm", "SP_mm", "CWR (mm)", "SP (mm)"),
+        ("RCh", "PEh", "RCh (hour)", "PEh (%)"),
+    ]
+    months = np.arange(1, 13)
+    fig, axes = plt.subplots(4, 1, figsize=(8.0, 10.6), sharex=True)
+    try:
+        for index, (bar_key, line_key, bar_label, line_label) in enumerate(
+            panels
+        ):
+            ax = axes[index]
+            twin = ax.twinx()
+            bars = [float(row[bar_key]) for row in monthly]
+            line = [float(row[line_key]) for row in monthly]
+            ax.bar(months, bars, width=0.52, color="#1454d8", zorder=2)
+            twin.plot(
+                months,
+                line,
+                color="#111111",
+                marker="o",
+                linewidth=1.7,
+                markersize=4.8,
+                zorder=3,
+            )
+            ax.set_ylabel(bar_label, color="#1454d8")
+            twin.set_ylabel(line_label, color="#111111")
+            ax.tick_params(axis="y", colors="#1454d8", direction="in")
+            twin.tick_params(axis="y", colors="#111111", direction="in")
+            ax.text(
+                0.02,
+                0.88,
+                f"({chr(ord('a') + index)})",
+                transform=ax.transAxes,
+                fontsize=12,
+            )
+            ax.grid(axis="y", color="#d8d8d8", linewidth=0.6, alpha=0.7)
+            ax.margins(x=0.04)
+        axes[-1].set_xticks(months)
+        axes[-1].set_xlabel("Month")
+        fig.subplots_adjust(hspace=0.2, left=0.14, right=0.86)
+        _save(fig, target, dpi=180)
+    finally:
+        plt.close(fig)
+
+
+def _render_annual_maps(
+    spatial: xr.Dataset,
+    mask: np.ndarray,
+    geometry,
+    target: Path,
+) -> None:
+    panels = [
+        ("pic3_a", "GMv", "mm"),
+        ("pic3_b", "CEv", "%"),
+        ("pic3_c", "CWR", "mm"),
+        ("pic3_d", "GMh", "mm"),
+        ("pic3_e", "SP", "mm"),
+        ("pic3_f", "PEh", "%"),
+    ]
+    missing = [name for name, _, _ in panels if name not in spatial]
+    if missing:
+        raise ValueError(f"Annual figure is missing spatial field {missing[0]}")
+    fig, axes = plt.subplots(3, 2, figsize=(12.0, 6.8))
+    try:
+        for index, (name, title, unit) in enumerate(panels):
+            _draw_map_panel(
+                fig,
+                axes.flat[index],
+                spatial,
+                mask,
+                geometry,
+                name,
+                f"({chr(ord('a') + index)}) {title}",
+                unit,
+            )
+        fig.subplots_adjust(hspace=0.28, wspace=0.28)
+        _save(fig, target, dpi=180)
+    finally:
+        plt.close(fig)
+
+
+def _render_season_maps(
+    spatial: xr.Dataset,
+    mask: np.ndarray,
+    geometry,
+    variables: list[str],
+    target: Path,
+    *,
+    zero_based: bool,
+) -> None:
+    missing = [name for name in variables if name not in spatial]
+    if missing:
+        raise ValueError(
+            f"Seasonal figure is missing spatial field {missing[0]}"
+        )
+    values = np.concatenate(
+        [spatial[name].values[mask].astype(float) for name in variables]
+    )
+    levels = _levels(values, zero_based=zero_based)
+    seasons = ["Spring", "Summer", "Autumn", "Winter"]
+    fig = plt.figure(figsize=(11.4, 5.8))
+    grid = fig.add_gridspec(
+        2,
+        3,
+        width_ratios=[1, 1, 0.045],
+        hspace=0.3,
+        wspace=0.2,
+    )
+    axes = [
+        fig.add_subplot(grid[row, column])
+        for row in range(2)
+        for column in range(2)
+    ]
+    colorbar_axis = fig.add_subplot(grid[:, 2])
+    try:
+        contour = None
+        for index, (name, season) in enumerate(zip(variables, seasons)):
+            contour = _draw_map_panel(
+                fig,
+                axes[index],
+                spatial,
+                mask,
+                geometry,
+                name,
+                f"({chr(ord('a') + index)}) {season}",
+                None,
+                levels=levels,
+            )
+        if contour is None:
+            raise ValueError("Seasonal figure produced no contour")
+        fig.colorbar(contour, cax=colorbar_axis, label="mm")
+        _save(fig, target, dpi=180)
+    finally:
+        plt.close(fig)
+
+
+def _draw_map_panel(
+    fig,
+    ax,
+    spatial: xr.Dataset,
+    mask: np.ndarray,
+    geometry,
+    variable: str,
+    title: str,
+    unit: str | None,
+    *,
+    levels: np.ndarray | None = None,
+):
+    lon = spatial["lon"].values
+    lat = spatial["lat"].values
+    data = np.where(mask, spatial[variable].values.astype(float), np.nan)
+    valid = data[mask]
+    if not np.all(np.isfinite(valid)):
+        raise ValueError(f"Spatial figure field {variable} is non-finite")
+    panel_levels = levels if levels is not None else _levels(valid)
+    contour = ax.contourf(
+        lon,
+        lat,
+        data,
+        levels=panel_levels,
+        cmap=MAP_COLORMAP,
+        extend="both",
+    )
+    if geometry is not None:
+        _plot_geometry(ax, geometry, color="#4d4d4d", linewidth=0.8)
+    else:
+        _plot_mask_boundary(
+            ax,
+            lon,
+            lat,
+            mask,
+            color="#4d4d4d",
+            linewidth=0.8,
+        )
+    _configure_map_axis(ax, lon, lat, mask, geometry)
+    ax.set_title(title, loc="left", fontsize=11)
+    if unit is not None:
+        fig.colorbar(contour, ax=ax, label=unit, fraction=0.04, pad=0.025)
+    return contour
+
+
+def _levels(values: np.ndarray, *, zero_based: bool = False) -> np.ndarray:
+    finite = np.asarray(values, dtype=float)
+    finite = finite[np.isfinite(finite)]
+    if finite.size == 0:
+        raise ValueError("Figure field has no finite values")
+    lower = 0.0 if zero_based else float(finite.min())
+    upper = float(finite.max())
+    if np.isclose(lower, upper):
+        spread = max(abs(upper) * 0.05, 1.0)
+        lower -= spread
+        upper += spread
+    return np.linspace(lower, upper, 9)
+
+
+def _region_geometry(region_spec: dict[str, Any]):
+    if region_spec.get("kind") != "shp":
+        return None
+    payload = region_spec["payload"]
+    return load_shp_geometry(Path(payload["path"]), payload)
+
+
+def _plot_geometry(
+    ax,
+    geometry,
+    *,
+    color: str,
+    linewidth: float,
+    label: str | None = None,
+) -> None:
+    geometries = (
+        list(geometry.geoms)
+        if hasattr(geometry, "geoms")
+        else [geometry]
+    )
+    first = True
+    for item in geometries:
+        if not hasattr(item, "exterior"):
+            continue
+        x, y = item.exterior.xy
+        ax.plot(
+            x,
+            y,
+            color=color,
+            linewidth=linewidth,
+            label=label if first else None,
+            zorder=4,
+        )
+        first = False
+
+
+def _plot_mask_boundary(
+    ax,
+    lon: np.ndarray,
+    lat: np.ndarray,
+    mask: np.ndarray,
+    *,
+    color: str,
+    linewidth: float,
+) -> None:
+    lon_edges = _coordinate_edges(lon)
+    lat_edges = _coordinate_edges(lat)
+    for row, column in zip(*np.where(mask)):
+        neighbors = [
+            (row - 1, column, "north"),
+            (row + 1, column, "south"),
+            (row, column - 1, "west"),
+            (row, column + 1, "east"),
+        ]
+        for neighbor_row, neighbor_column, side in neighbors:
+            outside = (
+                neighbor_row < 0
+                or neighbor_row >= mask.shape[0]
+                or neighbor_column < 0
+                or neighbor_column >= mask.shape[1]
+                or not mask[neighbor_row, neighbor_column]
+            )
+            if not outside:
+                continue
+            x0, x1 = lon_edges[column], lon_edges[column + 1]
+            y0, y1 = lat_edges[row], lat_edges[row + 1]
+            if side == "north":
+                ax.plot([x0, x1], [y0, y0], color=color, linewidth=linewidth)
+            elif side == "south":
+                ax.plot([x0, x1], [y1, y1], color=color, linewidth=linewidth)
+            elif side == "west":
+                ax.plot([x0, x0], [y0, y1], color=color, linewidth=linewidth)
+            else:
+                ax.plot([x1, x1], [y0, y1], color=color, linewidth=linewidth)
+
+
+def _coordinate_edges(values: np.ndarray) -> np.ndarray:
+    values = np.asarray(values, dtype=float)
+    if values.size == 1:
+        return np.array([values[0] - 0.5, values[0] + 0.5])
+    midpoints = (values[:-1] + values[1:]) / 2
+    return np.concatenate(
+        (
+            [values[0] - (midpoints[0] - values[0])],
+            midpoints,
+            [values[-1] + (values[-1] - midpoints[-1])],
+        )
+    )
+
+
+def _configure_map_axis(
+    ax,
+    lon: np.ndarray,
+    lat: np.ndarray,
+    mask: np.ndarray,
+    geometry,
+) -> None:
+    lon_edges = _coordinate_edges(lon)
+    lat_edges = _coordinate_edges(lat)
+    selected_rows, selected_columns = np.where(mask)
+    lon_bounds = (
+        lon_edges[selected_columns.min()],
+        lon_edges[selected_columns.max() + 1],
+    )
+    lat_bounds = (
+        lat_edges[selected_rows.min()],
+        lat_edges[selected_rows.max() + 1],
+    )
+    if geometry is not None:
+        min_x, min_y, max_x, max_y = geometry.bounds
+        lon_bounds = (min(min(lon_bounds), min_x), max(max(lon_bounds), max_x))
+        lat_bounds = (min(min(lat_bounds), min_y), max(max(lat_bounds), max_y))
+    ax.set_xlim(float(min(lon_bounds)), float(max(lon_bounds)))
+    ax.set_ylim(float(min(lat_bounds)), float(max(lat_bounds)))
+    ax.xaxis.set_major_formatter(FuncFormatter(lambda value, _: f"{value:g}°E"))
+    ax.yaxis.set_major_formatter(FuncFormatter(lambda value, _: f"{value:g}°N"))
+    ax.tick_params(labelsize=8, direction="out")
+
+
+def _save(fig, target: Path, *, dpi: int) -> None:
+    target.parent.mkdir(parents=True, exist_ok=True)
+    fig.savefig(target, dpi=dpi, bbox_inches="tight", facecolor="white")
