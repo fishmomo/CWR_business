@@ -45,6 +45,14 @@ conda run -n cwr_py312 cwr-engine --business-metrics-spec path/to/metrics.json
 conda run -n cwr_py312 cwr-report --profile-spec path/to/profile.json
 ```
 
+The accepted direct-product single-year workflow can run both components from
+one transactional specification. Its contract is documented in
+`docs/cloud-water-single-year-workflow-contract.md`.
+
+```powershell
+conda run -n cwr_py312 cwr-engine --workflow-spec path/to/workflow.json
+```
+
 ## Repository data
 
 - `data/inputs/` contains versioned representative source data.

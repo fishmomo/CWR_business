@@ -467,9 +467,9 @@ grid-mask `NaN` handling to full-field contouring followed by polygon clipping.
 It also added proportional map padding, especially for the region preview.
 The synthetic direct-product test now exercises the SHP clipping path.
 
-## Next planned stage: single-year end-to-end orchestration
+## Completed stage: single-year end-to-end orchestration
 
-Status: planned, not active.
+Status: completed on 2026-07-31.
 
 ### Outcome
 
@@ -478,9 +478,67 @@ and DOCX assembly from one task specification and one command. Preserve the
 current component contracts while removing the manual handoff between the
 metrics and report commands.
 
+### Included
+
+- Define one versioned workflow specification for the direct-product
+  single-year cloud-water report.
+- Reuse the existing metrics, figure, and report-profile builders without
+  duplicating their calculation or rendering logic.
+- Stage every artifact outside the formal output directory.
+- Publish metrics, spatial data, five figures, report inputs, and DOCX together
+  only after the complete workflow succeeds.
+- Preserve an existing successful output directory when a rerun fails.
+- Index the generated DOCX in the published `report_inputs.json`.
+
+### Excluded
+
+- Removing the independent metrics and report commands or compatibility mode.
+- Multi-year orchestration, PDF conversion, GUI, Web UI, scheduling, retries,
+  or distributed workflow platforms.
+- New physical formulas, figure layouts, or report templates.
+- Generalizing this first business workflow into a plugin framework.
+
+### Acceptance
+
+- One workflow specification and one `cwr-engine` command build the complete
+  accepted single-year product.
+- Published `report_inputs.json` contains valid final paths for metrics,
+  spatial data, five figures, and the DOCX.
+- A failure after metric generation leaves no new formal output and preserves
+  any previously published run.
+- The real Inner Mongolia 2025 workflow reproduces the accepted report.
+- The full test suite passes in `cwr_py312`.
+
 ### Stop condition
 
 The stage ends after one transactional command reproduces the accepted real
 2025 report, failure leaves no partial formal outputs, the full suite passes,
 and the implementation is committed. Compatibility cleanup and multi-year
 work remain separate stages.
+
+The acceptance checks pass. One `--workflow-spec` command reads the real 2025
+annual and monthly products, compiles the corrected 52-cell SHP mask, writes
+the standardized metrics, fourteen spatial fields plus the mask, five figures,
+and the final DOCX, then publishes them as one run. The published
+`report_inputs.json` indexes all eight artifacts with valid final paths. The
+DOCX contains 58 paragraphs, two tables, five images, and no unresolved slots.
+Failure-path tests preserve an existing published run after metrics have
+already completed. The full suite passes with 62 tests in `cwr_py312`.
+
+## Next planned stage: compatibility-path retirement
+
+Status: planned, not active.
+
+### Outcome
+
+Inventory remaining users of the transitional annual/monthly CSV, spatial
+analysis NetCDF, and explicit historical PNG profile inputs. Migrate retained
+examples that still require those paths, then remove only compatibility code
+that has no verified caller. Multi-year report implementation remains a
+separate later decision.
+
+### Stop condition
+
+The stage ends after every compatibility path has an explicit keep-or-remove
+decision, supported paths have regression coverage, unused paths are removed,
+the full suite passes, and the result is committed.
