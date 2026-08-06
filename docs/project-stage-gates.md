@@ -588,9 +588,9 @@ use the same rule for their shared colorbars. Real figure inspection confirms
 one-decimal labels below 1000 and hundred-aligned integer labels for four- and
 five-digit ranges. The full suite passes with 62 tests in `cwr_py312`.
 
-## Next planned stage: multi-year report contract
+## Completed stage: multi-year report contract
 
-Status: planned, not active.
+Status: completed on 2026-08-06.
 
 ### Outcome
 
@@ -598,8 +598,62 @@ Define the authoritative year-selection rules, cross-year comparison metrics,
 figure set, narrative semantics, template mapping, and output contract for one
 multi-year cloud-water report before implementation begins.
 
+### Included
+
+- Distill the retained `Multi-Year_Evaluation_Report-xizang-cm.docx` template.
+- Define year selection and authoritative annual/monthly product use.
+- Define multi-year means, climatological monthly/seasonal values, interannual
+  statistics, trends, extrema, boundary transport, and spatial composites.
+- Define six figure contracts, two boundary-table contracts, deterministic
+  narrative rules, task schema, artifact schema, and acceptance data.
+- Resolve business choices through explicit user decisions and record them.
+
+### Excluded
+
+- Implementing calculations, figures, report filling, or orchestration.
+- Modifying the retained multi-year template.
+- Cross-scale resampling, PDF conversion, GUI, Web UI, and scheduling.
+- Generalizing beyond the cloud-water multi-year report.
+
+### Acceptance
+
+- Every retained template slot maps to a declared metric, narrative, table, or
+  figure.
+- Year selection, missing-year behavior, averaging, trend, extrema, and
+  tie-breaking rules are unambiguous.
+- Inputs come from authoritative annual/monthly product catalogs and one
+  mandatory region specification.
+- Six figure layouts and tidy colorbar behavior are defined.
+- One real acceptance range and expected structural checks are declared.
+- The contract is reviewed and approved before implementation is activated.
+
 ### Stop condition
 
 The stage ends when the multi-year input, calculation, figure, report, and
 acceptance contracts are documented and approved. Implementation starts only
 as a separately activated stage.
+
+The contract is approved. It defines a contiguous inclusive period of at least
+five complete years, strict annual/monthly product completeness, equal-year
+means, Mann-Kendall significance at `p < 0.05`, Theil-Sen slopes, display-level
+tie handling, annual-mean boundary transport, six figures, two tables,
+deterministic narratives, transactional publication, and the Inner Mongolia
+central-western 2021-2025 acceptance case. All 96 versioned template slots map
+to declared metrics, narratives, tables, or figures with no unmapped or extra
+slots. Five annual and sixty monthly acceptance products are present.
+
+## Next planned stage: multi-year report implementation
+
+Status: planned, not active.
+
+### Outcome
+
+Implement the approved version-1 contract as standardized multi-year metrics,
+spatial composites, six figures, a versioned template profile, and one
+transactional end-to-end workflow command.
+
+### Stop condition
+
+The stage ends after synthetic formula and failure tests pass, the real Inner
+Mongolia 2021-2025 report passes data, figure, template, and structural
+acceptance, the full suite passes in `cwr_py312`, and the result is committed.
