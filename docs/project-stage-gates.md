@@ -685,9 +685,10 @@ synthetic tests. The real report contains 66 paragraphs, two tables, six images,
 and no unresolved template slots. Its dynamic period and full region name are
 rendered without historical-year or duplicated-region suffixes. All six source
 figures pass visual inspection, and the full suite passes with 66 tests in
-`cwr_py312`. Full DOCX page rendering could not be performed because the local
-machine does not provide LibreOffice/`soffice`; structural DOCX validation was
-used as the documented fallback.
+`cwr_py312`. The final DOCX was rendered with the installed LibreOffice and
+bundled Poppler into 11 page images. Every page passed visual inspection after
+removing a retained empty task marker, keeping figure 6 with its caption, and
+tightening reference spacing to prevent a one-line trailing page.
 
 ## Next planned stage: cloud-water shared-kernel consolidation
 
