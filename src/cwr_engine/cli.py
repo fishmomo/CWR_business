@@ -1,4 +1,5 @@
 import argparse
+import json
 from pathlib import Path
 
 from cwr_engine.business_metrics.cloud_water import (
@@ -7,6 +8,9 @@ from cwr_engine.business_metrics.cloud_water import (
 from cwr_engine.pipeline import run_task
 from cwr_engine.workflows.cloud_water_single_year import (
     build_cloud_water_single_year_workflow,
+)
+from cwr_engine.workflows.cloud_water_multi_year import (
+    build_cloud_water_multi_year_workflow,
 )
 
 
@@ -21,9 +25,15 @@ def main(argv: list[str] | None = None) -> int:
     if args.workflow_spec:
         if args.output_root:
             parser.error("--output-root cannot be used with --workflow-spec")
-        output = build_cloud_water_single_year_workflow(
-            Path(args.workflow_spec)
-        )
+        workflow_path = Path(args.workflow_spec)
+        workflow_payload = json.loads(workflow_path.read_text(encoding="utf-8"))
+        workflow = workflow_payload.get("workflow")
+        if workflow == "cloud_water_single_year":
+            output = build_cloud_water_single_year_workflow(workflow_path)
+        elif workflow == "cloud_water_multi_year":
+            output = build_cloud_water_multi_year_workflow(workflow_path)
+        else:
+            parser.error(f"Unsupported workflow: {workflow}")
         print(output)
     elif args.business_metrics_spec:
         if args.output_root:

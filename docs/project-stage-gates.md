@@ -642,9 +642,26 @@ central-western 2021-2025 acceptance case. All 96 versioned template slots map
 to declared metrics, narratives, tables, or figures with no unmapped or extra
 slots. Five annual and sixty monthly acceptance products are present.
 
-## Next planned stage: multi-year report implementation
+## Completed stage: multi-year report implementation
 
-Status: planned, not active.
+Status: completed on 2026-08-06.
+
+### Included
+
+- Version and surgically correct the approved retained multi-year template.
+- Implement standardized multi-year metrics, trend records, and spatial
+  composites from official yearly and monthly products.
+- Generate six approved figures and two boundary tables.
+- Populate all 96 approved template slots with deterministic narratives.
+- Publish the complete product through one transactional workflow command.
+- Validate the real Inner Mongolia central-western 2021-2025 case.
+
+### Excluded
+
+- Non-contiguous or shorter-than-five periods.
+- Alternative formulas, figures, templates, or language-model narratives.
+- PDF conversion, GUI, Web UI, scheduling, and distributed execution.
+- Changes to the accepted single-year workflow.
 
 ### Outcome
 
@@ -657,3 +674,35 @@ transactional end-to-end workflow command.
 The stage ends after synthetic formula and failure tests pass, the real Inner
 Mongolia 2021-2025 report passes data, figure, template, and structural
 acceptance, the full suite passes in `cwr_py312`, and the result is committed.
+
+The acceptance checks pass. One transactional `--workflow-spec` command reads
+five annual and sixty monthly products for 2021-2025, compiles the required
+52-cell SHP mask, and publishes nine indexed artifacts: standardized metrics,
+one semantic spatial composite, six figures, and the completed DOCX. Equal-year
+means, monthly and seasonal climatologies, display-level ties, Mann-Kendall
+significance, Theil-Sen slopes, and strict missing-month failure are covered by
+synthetic tests. The real report contains 66 paragraphs, two tables, six images,
+and no unresolved template slots. Its dynamic period and full region name are
+rendered without historical-year or duplicated-region suffixes. All six source
+figures pass visual inspection, and the full suite passes with 66 tests in
+`cwr_py312`. Full DOCX page rendering could not be performed because the local
+machine does not provide LibreOffice/`soffice`; structural DOCX validation was
+used as the documented fallback.
+
+## Next planned stage: cloud-water shared-kernel consolidation
+
+Status: planned, not active.
+
+### Outcome
+
+Move product discovery, mask compilation, regional aggregation, spatial
+derivation, and shared report helpers used by both cloud-water workflows behind
+stable public modules. Remove cross-profile imports of private single-year
+helpers without changing accepted single-year or multi-year outputs.
+
+### Stop condition
+
+The stage ends when both workflows use the shared public APIs, their real
+acceptance outputs remain equivalent, the full suite passes, and the refactor
+is committed. New formulas, figures, templates, and report types remain outside
+this stage.

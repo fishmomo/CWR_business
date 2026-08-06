@@ -53,6 +53,16 @@ one transactional specification. Its contract is documented in
 conda run -n cwr_py312 cwr-engine --workflow-spec path/to/workflow.json
 ```
 
+The approved multi-year workflow accepts a contiguous inclusive period of at
+least five complete years. It requires one annual and twelve monthly products
+per year and publishes standardized metrics, a spatial composite, six figures,
+two report tables, and the completed DOCX transactionally. Its contract is in
+`docs/cloud-water-multi-year-report-contract.md`.
+
+```powershell
+conda run -n cwr_py312 cwr-engine --workflow-spec examples/workflows/nmg-zxb-cloud-water-multi-year-2021-2025.json
+```
+
 ## Repository data
 
 - `data/inputs/` contains versioned representative source data.
