@@ -106,3 +106,12 @@
   variable name, and use 12-pt title padding from the colorbar axis.
 - Review result: automated tests only; visual review remains explicitly
   skipped. Formal reports are regenerated after this change.
+
+## Sequence-axis typography alignment
+
+- Change date: 2026-08-07.
+- Scope: monthly Figure 2 and multi-year interannual Figure 3.
+- New setting: both x- and y-axis titles use 16-pt source text; both x- and
+  y-axis tick labels use 15-pt source text.
+- Reason: the retained 24-pt y-axis typography was visibly disproportionate
+  after the x-axis was reduced, causing crowded units and tick labels.

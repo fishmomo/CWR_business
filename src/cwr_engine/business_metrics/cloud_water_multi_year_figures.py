@@ -136,19 +136,19 @@ def _render_interannual_sequence(
             )
             _pad_axis(ax, bars)
             _pad_axis(twin, line)
-            ax.set_ylabel(bar_label, color="#1454d8", fontsize=24)
-            twin.set_ylabel(line_label, color="#111111", fontsize=24)
+            ax.set_ylabel(bar_label, color="#1454d8", fontsize=16)
+            twin.set_ylabel(line_label, color="#111111", fontsize=16)
             ax.tick_params(
                 axis="y",
                 colors="#1454d8",
                 direction="out",
-                labelsize=24,
+                labelsize=15,
             )
             twin.tick_params(
                 axis="y",
                 colors="#111111",
                 direction="out",
-                labelsize=24,
+                labelsize=15,
             )
             ax.text(
                 0.015,

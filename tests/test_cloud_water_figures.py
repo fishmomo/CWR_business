@@ -66,7 +66,12 @@ def test_interannual_sequence_uses_approved_abbreviations_and_typography(
         "RTh (hour)",
         "PEh (%)",
     }
-    assert all(axis.yaxis.label.get_fontsize() >= 24 for axis in figure.axes)
+    assert all(axis.yaxis.label.get_fontsize() == 16 for axis in figure.axes)
+    assert all(
+        label.get_fontsize() == 15
+        for axis in figure.axes
+        for label in axis.get_yticklabels()
+    )
     year_axis = next(axis for axis in figure.axes if axis.get_xlabel() == "Year")
     assert all(
         label.get_fontsize() == 15 for label in year_axis.get_xticklabels()
@@ -232,9 +237,9 @@ def test_monthly_sequence_uses_approved_abbreviations_and_typography(
         "PEh (%)",
     }
     assert all(axis.get_title() == "" for axis in figure.axes)
-    assert all(axis.yaxis.label.get_fontsize() >= 24 for axis in figure.axes)
+    assert all(axis.yaxis.label.get_fontsize() == 16 for axis in figure.axes)
     assert all(
-        label.get_fontsize() >= 24
+        label.get_fontsize() == 15
         for axis in figure.axes
         for label in axis.get_yticklabels()
     )
