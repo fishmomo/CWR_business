@@ -57,14 +57,14 @@ def test_interannual_sequence_uses_approved_abbreviations_and_typography(
 
     figure = captured["figure"]
     assert {axis.get_ylabel() for axis in figure.axes} == {
-        "GMv",
-        "CEv",
-        "GMh",
-        "Cvh",
-        "CWR",
-        "Ps",
-        "RTh",
-        "PEh",
+        "GMv (mm)",
+        "CEv (%)",
+        "GMh (mm)",
+        "Cvh (mm)",
+        "CWR (mm)",
+        "Ps (mm)",
+        "RTh (hour)",
+        "PEh (%)",
     }
     assert all(axis.yaxis.label.get_fontsize() >= 24 for axis in figure.axes)
     year_axis = next(axis for axis in figure.axes if axis.get_xlabel() == "Year")
@@ -119,12 +119,12 @@ def test_annual_maps_use_panel_labels_and_aligned_colorbars(
     ]
     assert all(axis.get_title() == "" for axis in map_axes)
     assert [axis.get_title() for axis in colorbar_axes] == [
-        "GMv",
-        "CEv",
-        "CWR",
-        "GMh",
-        "Ps",
-        "PEh",
+        "mm",
+        "%",
+        "mm",
+        "mm",
+        "mm",
+        "%",
     ]
     assert all(not axis.get_xticklabels() for axis in map_axes[:4])
     assert all(not axis.get_yticklabels() for axis in map_axes[1::2])
@@ -161,7 +161,7 @@ def test_season_maps_use_panel_labels_and_full_height_colorbar(
         np.ones((3, 3), dtype=bool),
         None,
         [f"season_{suffix}" for suffix in "abcd"],
-        "Ps",
+        "mm",
         tmp_path / "season.png",
         zero_based=True,
     )
@@ -177,7 +177,7 @@ def test_season_maps_use_panel_labels_and_full_height_colorbar(
         "(d)",
     ]
     assert all(axis.get_title() == "" for axis in map_axes)
-    assert colorbar_axis.get_title() == "Ps"
+    assert colorbar_axis.get_title() == "mm"
     assert all(not axis.get_xticklabels() for axis in map_axes[:2])
     assert all(not axis.get_yticklabels() for axis in map_axes[1::2])
     panel_bottom = min(axis.get_position().y0 for axis in map_axes)
@@ -222,14 +222,14 @@ def test_monthly_sequence_uses_approved_abbreviations_and_typography(
     figure = captured["figure"]
     labels = {axis.get_ylabel() for axis in figure.axes}
     assert labels == {
-        "GMv",
-        "CEv",
-        "GMh",
-        "Cvh",
-        "CWR",
-        "Ps",
-        "RTh",
-        "PEh",
+        "GMv (mm)",
+        "CEv (%)",
+        "GMh (mm)",
+        "Cvh (mm)",
+        "CWR (mm)",
+        "Ps (mm)",
+        "RTh (hour)",
+        "PEh (%)",
     }
     assert all(axis.get_title() == "" for axis in figure.axes)
     assert all(axis.yaxis.label.get_fontsize() >= 24 for axis in figure.axes)
@@ -253,7 +253,7 @@ def test_monthly_sequence_uses_approved_abbreviations_and_typography(
     )
     assert month_axis.xaxis.label.get_fontsize() == 16
     assert all(
-        label.get_rotation() == 45 for label in month_axis.get_xticklabels()
+        label.get_rotation() == 0 for label in month_axis.get_xticklabels()
     )
     assert figure._suptitle is None
 

@@ -93,3 +93,16 @@
   panel labels retain their previously accepted settings.
 - Review result: automated tests only. Visual PNG and DOCX review was
   explicitly skipped for this adjustment.
+
+## Unit-label correction
+
+- Change date: 2026-08-07.
+- Scope: monthly Figure 2, multi-year interannual Figure 3, and all annual and
+  seasonal spatial maps.
+- Sequence figures: y-axis labels now combine the approved abbreviation with
+  `mm`, `%`, or `hour`. Figure 2 month tick labels use zero rotation and its
+  source canvas width is 7.2 inches.
+- Spatial figures: colorbar titles show only `mm` or `%`, not the physical
+  variable name, and use 12-pt title padding from the colorbar axis.
+- Review result: automated tests only; visual review remains explicitly
+  skipped. Formal reports are regenerated after this change.

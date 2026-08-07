@@ -62,7 +62,7 @@ def render_cloud_water_multi_year_figures(
         mask,
         geometry,
         [f"pic4_{suffix}" for suffix in "abcd"],
-        "Ps",
+        "mm",
         targets["target_image5"],
         zero_based=True,
     )
@@ -71,7 +71,7 @@ def render_cloud_water_multi_year_figures(
         mask,
         geometry,
         [f"pic5_{suffix}" for suffix in "abcd"],
-        "CWR",
+        "mm",
         targets["target_image6"],
         zero_based=False,
     )
@@ -90,26 +90,26 @@ def _render_interannual_sequence(
         (
             lambda row: row["equivalent_depth_mm"]["GMv"],
             lambda row: row["values"]["CEv"],
-            "GMv",
-            "CEv",
+            "GMv (mm)",
+            "CEv (%)",
         ),
         (
             lambda row: row["equivalent_depth_mm"]["GMh"],
             lambda row: row["equivalent_depth_mm"]["MC"],
-            "GMh",
-            "Cvh",
+            "GMh (mm)",
+            "Cvh (mm)",
         ),
         (
             lambda row: row["equivalent_depth_mm"]["CWR"],
             lambda row: row["equivalent_depth_mm"]["SP"],
-            "CWR",
-            "Ps",
+            "CWR (mm)",
+            "Ps (mm)",
         ),
         (
             lambda row: row["values"]["RCh"],
             lambda row: row["values"]["PEh"],
-            "RTh",
-            "PEh",
+            "RTh (hour)",
+            "PEh (%)",
         ),
     ]
     positions = np.arange(len(years))

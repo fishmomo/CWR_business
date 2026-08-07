@@ -45,7 +45,7 @@ def render_cloud_water_figures(
         mask,
         geometry,
         [f"pic4_{suffix}" for suffix in "abcd"],
-        "Ps",
+        "mm",
         targets["target_image4"],
         zero_based=True,
     )
@@ -54,7 +54,7 @@ def render_cloud_water_figures(
         mask,
         geometry,
         [f"pic5_{suffix}" for suffix in "abcd"],
-        "CWR",
+        "mm",
         targets["target_image5"],
         zero_based=False,
     )
@@ -147,13 +147,13 @@ def _render_monthly_sequence(metrics: dict[str, Any], target: Path) -> None:
             raise ValueError("Monthly sequence figure contains non-finite data")
 
     panels = [
-        ("GMv_mm", "CEv", "GMv", "CEv"),
-        ("GMh_mm", "MC_mm", "GMh", "Cvh"),
-        ("CWR_mm", "SP_mm", "CWR", "Ps"),
-        ("RCh", "PEh", "RTh", "PEh"),
+        ("GMv_mm", "CEv", "GMv (mm)", "CEv (%)"),
+        ("GMh_mm", "MC_mm", "GMh (mm)", "Cvh (mm)"),
+        ("CWR_mm", "SP_mm", "CWR (mm)", "Ps (mm)"),
+        ("RCh", "PEh", "RTh (hour)", "PEh (%)"),
     ]
     months = np.arange(1, 13)
-    fig, axes = plt.subplots(4, 1, figsize=(6.4, 8.5), sharex=True)
+    fig, axes = plt.subplots(4, 1, figsize=(7.2, 8.5), sharex=True)
     try:
         for index, (bar_key, line_key, bar_label, line_label) in enumerate(
             panels
@@ -199,9 +199,8 @@ def _render_monthly_sequence(metrics: dict[str, Any], target: Path) -> None:
         axes[-1].tick_params(axis="x", direction="out", labelsize=15)
         plt.setp(
             axes[-1].get_xticklabels(),
-            ha="right",
-            rotation=45,
-            rotation_mode="anchor",
+            ha="center",
+            rotation=0,
         )
         axes[-1].set_xlabel("Month", fontsize=16)
         fig.subplots_adjust(hspace=0.22, left=0.17, right=0.83)
@@ -217,12 +216,12 @@ def _render_annual_maps(
     target: Path,
 ) -> None:
     panels = [
-        ("pic3_a", "GMv"),
-        ("pic3_b", "CEv"),
-        ("pic3_c", "CWR"),
-        ("pic3_d", "GMh"),
-        ("pic3_e", "Ps"),
-        ("pic3_f", "PEh"),
+        ("pic3_a", "mm"),
+        ("pic3_b", "%"),
+        ("pic3_c", "mm"),
+        ("pic3_d", "mm"),
+        ("pic3_e", "mm"),
+        ("pic3_f", "%"),
     ]
     missing = [name for name, _ in panels if name not in spatial]
     if missing:
@@ -409,7 +408,7 @@ def _colorbar_ticks(levels: np.ndarray, *, max_ticks: int) -> np.ndarray:
 
 def _style_colorbar(colorbar, label: str) -> None:
     colorbar.ax.tick_params(labelsize=23)
-    colorbar.ax.set_title(label, fontsize=23, pad=5)
+    colorbar.ax.set_title(label, fontsize=23, pad=12)
 
 
 def _levels(values: np.ndarray, *, zero_based: bool = False) -> np.ndarray:
