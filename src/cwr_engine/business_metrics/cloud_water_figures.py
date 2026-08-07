@@ -145,13 +145,13 @@ def _render_monthly_sequence(metrics: dict[str, Any], target: Path) -> None:
             raise ValueError("Monthly sequence figure contains non-finite data")
 
     panels = [
-        ("GMv_mm", "CEv", "GMv (mm)", "CEv (%)"),
-        ("GMh_mm", "MC_mm", "GMh (mm)", "MC (mm)"),
-        ("CWR_mm", "SP_mm", "CWR (mm)", "SP (mm)"),
-        ("RCh", "PEh", "RCh (hour)", "PEh (%)"),
+        ("GMv_mm", "CEv", "GMv", "CEv"),
+        ("GMh_mm", "MC_mm", "GMh", "Cvh"),
+        ("CWR_mm", "SP_mm", "CWR", "Ps"),
+        ("RCh", "PEh", "RTh", "PEh"),
     ]
     months = np.arange(1, 13)
-    fig, axes = plt.subplots(4, 1, figsize=(8.0, 10.6), sharex=True)
+    fig, axes = plt.subplots(4, 1, figsize=(6.4, 8.5), sharex=True)
     try:
         for index, (bar_key, line_key, bar_label, line_label) in enumerate(
             panels
@@ -166,26 +166,43 @@ def _render_monthly_sequence(metrics: dict[str, Any], target: Path) -> None:
                 line,
                 color="#111111",
                 marker="o",
-                linewidth=1.7,
-                markersize=4.8,
+                linewidth=2.4,
+                markersize=6.5,
                 zorder=3,
             )
-            ax.set_ylabel(bar_label, color="#1454d8")
-            twin.set_ylabel(line_label, color="#111111")
-            ax.tick_params(axis="y", colors="#1454d8", direction="in")
-            twin.tick_params(axis="y", colors="#111111", direction="in")
+            ax.set_ylabel(bar_label, color="#1454d8", fontsize=24)
+            twin.set_ylabel(line_label, color="#111111", fontsize=24)
+            ax.tick_params(
+                axis="y",
+                colors="#1454d8",
+                direction="out",
+                labelsize=24,
+            )
+            twin.tick_params(
+                axis="y",
+                colors="#111111",
+                direction="out",
+                labelsize=24,
+            )
             ax.text(
-                0.02,
-                0.88,
+                0.015,
+                0.82,
                 f"({chr(ord('a') + index)})",
                 transform=ax.transAxes,
-                fontsize=12,
+                fontsize=24,
             )
             ax.grid(axis="y", color="#d8d8d8", linewidth=0.6, alpha=0.7)
             ax.margins(x=0.04)
         axes[-1].set_xticks(months)
-        axes[-1].set_xlabel("Month")
-        fig.subplots_adjust(hspace=0.2, left=0.14, right=0.86)
+        axes[-1].tick_params(axis="x", direction="out", labelsize=21)
+        plt.setp(
+            axes[-1].get_xticklabels(),
+            ha="right",
+            rotation=45,
+            rotation_mode="anchor",
+        )
+        axes[-1].set_xlabel("Month", fontsize=24)
+        fig.subplots_adjust(hspace=0.22, left=0.17, right=0.83)
         _save(fig, target, dpi=180)
     finally:
         plt.close(fig)

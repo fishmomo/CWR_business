@@ -28,3 +28,27 @@
   and following sections remain correctly placed. The standard multi-year
   output directory was externally locked during regeneration, so the verified
   multi-year artifact used the equivalent `-figure1-qa` output root.
+
+## Figure 2: monthly sequence
+
+- Review date: 2026-08-07.
+- Rule version: Figure Visual Acceptance Rules version 1; no exception.
+- Business use: compare the monthly evolution of four bar metrics with four
+  corresponding line metrics for a single year or a multi-year climatology.
+- Typography and labels: use 24-pt y-axis labels, y-axis tick labels, x-axis
+  text, and panel labels. Month tick labels use 21 pt to prevent two-digit
+  months from colliding and are rotated 45 degrees. Display only the approved
+  abbreviations `GMv`, `CEv`, `GMh`, `Cvh`, `CWR`, `Ps`, `RTh`, and `PEh` on
+  the y axes.
+- Layout: retain four vertically stacked dual-axis panels, use only `(a)` to
+  `(d)` panel labels, and use no panel title or overall title. The canvas is
+  6.4 by 8.5 inches for placement at the report's 4-inch image width.
+- Affected profiles: single-year Figure 2 and multi-year Figure 2 share this
+  implementation; the multi-year interannual Figure 3 is outside this review.
+- Scope: this change applies only to the shared monthly sequence figure.
+- Acceptance result: passed. The single-year report and an isolated multi-year
+  QA run were rendered through LibreOffice and inspected at full-page size.
+  All labels remain readable, month ticks do not collide, and the figure,
+  caption, and following explanatory text remain correctly placed. The
+  multi-year artifact used the equivalent `-figure2-qa` output root because the
+  standard multi-year output directory has an existing external lock.

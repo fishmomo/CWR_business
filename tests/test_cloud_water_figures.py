@@ -5,10 +5,82 @@ import xarray as xr
 
 from cwr_engine.business_metrics.cloud_water_figures import (
     _draw_map_panel,
+    _render_monthly_sequence,
     _render_region_preview,
     _tidy_colorbar_label,
     _tidy_colorbar_levels,
 )
+
+
+def test_monthly_sequence_uses_approved_abbreviations_and_typography(
+    tmp_path,
+    monkeypatch,
+):
+    monthly = [
+        {
+            "month": month,
+            "GMv_mm": 100.0 + month,
+            "CEv": 2.0 + month / 10,
+            "GMh_mm": 20.0 + month,
+            "MC_mm": 10.0 + month,
+            "CWR_mm": 5.0 + month,
+            "SP_mm": 8.0 + month,
+            "RCh": 2.0 + month,
+            "PEh": 20.0 + month,
+        }
+        for month in range(1, 13)
+    ]
+    captured = {}
+
+    def capture_figure(fig, target, *, dpi):
+        captured["figure"] = fig
+
+    monkeypatch.setattr(
+        "cwr_engine.business_metrics.cloud_water_figures._save",
+        capture_figure,
+    )
+
+    _render_monthly_sequence(
+        {"monthly": monthly},
+        tmp_path / "monthly.png",
+    )
+
+    figure = captured["figure"]
+    labels = {axis.get_ylabel() for axis in figure.axes}
+    assert labels == {
+        "GMv",
+        "CEv",
+        "GMh",
+        "Cvh",
+        "CWR",
+        "Ps",
+        "RTh",
+        "PEh",
+    }
+    assert all(axis.get_title() == "" for axis in figure.axes)
+    assert all(axis.yaxis.label.get_fontsize() >= 24 for axis in figure.axes)
+    assert all(
+        label.get_fontsize() >= 24
+        for axis in figure.axes
+        for label in axis.get_yticklabels()
+    )
+    panel_labels = [
+        text.get_text()
+        for axis in figure.axes
+        for text in axis.texts
+        if text.get_text().startswith("(")
+    ]
+    assert panel_labels == ["(a)", "(b)", "(c)", "(d)"]
+    month_axis = next(
+        axis for axis in figure.axes if axis.get_xlabel() == "Month"
+    )
+    assert all(
+        label.get_fontsize() >= 21 for label in month_axis.get_xticklabels()
+    )
+    assert all(
+        label.get_rotation() == 45 for label in month_axis.get_xticklabels()
+    )
+    assert figure._suptitle is None
 
 
 def test_region_preview_uses_approved_single_figure_typography(
