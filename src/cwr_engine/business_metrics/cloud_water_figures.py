@@ -32,7 +32,12 @@ def render_cloud_water_figures(
     if not mask.any():
         raise ValueError("Cloud-water figure mask contains no grid cells")
     geometry = _region_geometry(region_spec)
-    _render_region_preview(spatial, mask, geometry, targets["target_image1"])
+    _render_region_preview(
+        spatial,
+        mask,
+        geometry,
+        targets["target_image1"],
+    )
     _render_monthly_sequence(metrics, targets["target_image2"])
     _render_annual_maps(spatial, mask, geometry, targets["target_image3"])
     _render_season_maps(
@@ -61,7 +66,7 @@ def _render_region_preview(
 ) -> None:
     lon = spatial["lon"].values
     lat = spatial["lat"].values
-    fig, ax = plt.subplots(figsize=(9.2, 3.6))
+    fig, ax = plt.subplots(figsize=(6.4, 3.2))
     try:
         selected_lat, selected_lon = np.where(mask)
         ax.scatter(
@@ -69,7 +74,7 @@ def _render_region_preview(
             lat[selected_lat],
             s=18,
             color="#d62728",
-            label="selected grid centers",
+            label="Grid centers",
             zorder=3,
         )
         _plot_mask_boundary(ax, lon, lat, mask, color="#1756d3", linewidth=1.8)
@@ -79,9 +84,15 @@ def _render_region_preview(
                 geometry,
                 color="#188f38",
                 linewidth=1.4,
-                label="source region",
+                label="Region boundary",
             )
-        ax.plot([], [], color="#1756d3", linewidth=1.8, label="mask boundary")
+        ax.plot(
+            [],
+            [],
+            color="#1756d3",
+            linewidth=1.8,
+            label="Mask boundary",
+        )
         _configure_map_axis(
             ax,
             lon,
@@ -89,9 +100,20 @@ def _render_region_preview(
             mask,
             geometry,
             padding=(0.12, 0.16),
+            tick_labelsize=22,
         )
         ax.grid(color="#c8c8c8", linewidth=0.7, alpha=0.8)
-        ax.legend(loc="lower left", frameon=False, fontsize=9)
+        ax.set_title("Cloud-Water Evaluation Region", fontsize=22, pad=12)
+        ax.legend(
+            loc="upper center",
+            bbox_to_anchor=(0.5, -0.22),
+            borderaxespad=0,
+            columnspacing=1.1,
+            frameon=False,
+            handlelength=1.8,
+            fontsize=22,
+            ncol=2,
+        )
         _save(fig, target, dpi=180)
     finally:
         plt.close(fig)
@@ -526,6 +548,7 @@ def _configure_map_axis(
     geometry,
     *,
     padding: tuple[float, float],
+    tick_labelsize: float = 8,
 ) -> None:
     lon_edges = _coordinate_edges(lon)
     lat_edges = _coordinate_edges(lat)
@@ -556,7 +579,7 @@ def _configure_map_axis(
     )
     ax.xaxis.set_major_formatter(FuncFormatter(lambda value, _: f"{value:g}°E"))
     ax.yaxis.set_major_formatter(FuncFormatter(lambda value, _: f"{value:g}°N"))
-    ax.tick_params(labelsize=8, direction="out")
+    ax.tick_params(labelsize=tick_labelsize, direction="out")
 
 
 def _save(fig, target: Path, *, dpi: int) -> None:

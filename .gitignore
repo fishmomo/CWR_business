@@ -6,3 +6,4 @@ __pycache__/
 
 # Regenerated pipeline runs; curated examples live in artifacts/examples/.
 artifacts/runs/
+artifacts/qa/

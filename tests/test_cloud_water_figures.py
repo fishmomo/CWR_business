@@ -1,12 +1,54 @@
 import matplotlib.pyplot as plt
 import numpy as np
+from shapely.geometry import box
 import xarray as xr
 
 from cwr_engine.business_metrics.cloud_water_figures import (
     _draw_map_panel,
+    _render_region_preview,
     _tidy_colorbar_label,
     _tidy_colorbar_levels,
 )
+
+
+def test_region_preview_uses_approved_single_figure_typography(
+    tmp_path,
+    monkeypatch,
+):
+    spatial = xr.Dataset(
+        coords={"lat": [40.0, 41.0], "lon": [110.0, 111.0]},
+    )
+    mask = np.ones((2, 2), dtype=bool)
+    captured = {}
+
+    def capture_figure(fig, target, *, dpi):
+        captured["figure"] = fig
+
+    monkeypatch.setattr(
+        "cwr_engine.business_metrics.cloud_water_figures._save",
+        capture_figure,
+    )
+
+    _render_region_preview(
+        spatial,
+        mask,
+        box(109.5, 39.5, 111.5, 41.5),
+        tmp_path / "region.png",
+    )
+
+    axis = captured["figure"].axes[0]
+    assert axis.get_title() == "Cloud-Water Evaluation Region"
+    assert axis.title.get_fontsize() >= 22
+    assert all(label.get_fontsize() >= 22 for label in axis.get_xticklabels())
+    assert all(label.get_fontsize() >= 22 for label in axis.get_yticklabels())
+    legend = axis.get_legend()
+    assert [text.get_text() for text in legend.get_texts()] == [
+        "Grid centers",
+        "Region boundary",
+        "Mask boundary",
+    ]
+    assert all(text.get_fontsize() >= 22 for text in legend.get_texts())
+    assert legend._ncols == 2
 
 
 def test_figure_five_colorbar_uses_one_decimal_below_one_thousand():
