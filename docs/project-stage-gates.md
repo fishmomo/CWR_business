@@ -17,6 +17,11 @@ of being added to the active scope.
 Every stage-completion report must also state the next planned stage, summarize
 its intended outcome, and say explicitly whether that stage is active.
 
+Figure work must follow `docs/figure-visual-acceptance-rules.md`. New explicit
+user requirements override older figure rules only when the adjustment and its
+impact range are recorded. Existing figures are revised and accepted one at a
+time unless a separate stage explicitly authorizes a broader migration.
+
 ## Current baseline
 
 The runnable baseline includes:

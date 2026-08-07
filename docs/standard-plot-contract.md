@@ -1,5 +1,11 @@
 # Standard Plot Contract
 
+All formal outputs also follow
+`docs/figure-visual-acceptance-rules.md`. That document is authoritative for
+font sizes, panel labels, title usage, colorbar alignment, and displayed
+variable abbreviations. Product-specific contracts may add requirements but
+may not silently weaken that baseline.
+
 ## Output requests
 
 The plot step recognizes:
@@ -54,4 +60,5 @@ unsupported title fields fail before the output directory is created.
 - Bar figures use the regional scalar results produced by the stat step.
 
 This contract does not define map projections, administrative boundaries, or
-product-specific layouts.
+product-specific layouts. Visual acceptance is defined separately so it can be
+updated without changing calculation or output-request semantics.

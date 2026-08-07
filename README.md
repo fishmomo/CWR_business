@@ -23,6 +23,10 @@ documented in `docs/real-product-data-source-contract.md`.
 Standard time-series, distribution, and comparison figure requests are
 documented in `docs/standard-plot-contract.md`.
 
+Default typography, label, panel, title, heatmap, and colorbar acceptance rules
+for all formal figures are documented in
+`docs/figure-visual-acceptance-rules.md`.
+
 Single-template DOCX assembly from `report_inputs.json` is documented in
 `docs/report-product-contract.md`.
 
