@@ -197,6 +197,7 @@ def test_business_metrics_and_report_are_derived_from_product_catalog(
                 "template": str(template),
                 "output": "report.docx",
                 "image_width_inches": 3.0,
+                "image_widths_inches": {"target_image3": 5.0},
             },
             ensure_ascii=False,
         ),
@@ -208,6 +209,8 @@ def test_business_metrics_and_report_are_derived_from_product_catalog(
     assert "<<" not in text
     assert len(document.tables) == 2
     assert len(document.inline_shapes) == 5
+    assert document.inline_shapes[0].width.inches == pytest.approx(3.0)
+    assert document.inline_shapes[2].width.inches == pytest.approx(5.0)
 
 
 def test_direct_business_metrics_fail_before_artifacts_without_products(

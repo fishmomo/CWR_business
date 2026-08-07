@@ -32,7 +32,12 @@ and report-profile commands remain supported.
   "template": "path/to/template.docx",
   "output_root": "artifacts/runs/region-cloud-water-2025",
   "report_filename": "2025-cloud-water-report.docx",
-  "image_width_inches": 4.0
+  "image_width_inches": 4.0,
+  "image_widths_inches": {
+    "target_image3": 6.2,
+    "target_image4": 6.2,
+    "target_image5": 6.2
+  }
 }
 ```
 
@@ -42,7 +47,8 @@ downstream calculation and map.
 
 `report_filename` must be a filename with the `.docx` suffix. It is written
 under the published run's `report` directory. `image_width_inches` is optional
-and defaults to `4.0`.
+and defaults to `4.0`. `image_widths_inches` optionally overrides that default
+for named report image slots.
 
 ## Execution
 

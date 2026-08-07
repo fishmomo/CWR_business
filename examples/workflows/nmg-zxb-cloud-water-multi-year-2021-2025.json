@@ -18,5 +18,10 @@
   "template": "../../data/templates/Multi-Year_Evaluation_Report-cwr-v1.docx",
   "output_root": "../../artifacts/runs/nmg-zxb-cloud-water-multi-year-2021-2025",
   "report_filename": "2021-2025-Year_Evaluation_Report-nmg-zxb.docx",
-  "image_width_inches": 4.0
+  "image_width_inches": 4.0,
+  "image_widths_inches": {
+    "target_image4": 6.2,
+    "target_image5": 6.2,
+    "target_image6": 6.2
+  }
 }

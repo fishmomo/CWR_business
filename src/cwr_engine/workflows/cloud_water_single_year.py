@@ -12,6 +12,8 @@ from cwr_engine.business_metrics.cloud_water import (
     build_cloud_water_business_metrics,
 )
 from cwr_report.profiles.cloud_water_single_year import (
+    IMAGE_SLOTS,
+    _image_width_overrides,
     build_cloud_water_single_year_report,
 )
 
@@ -31,6 +33,7 @@ class CloudWaterSingleYearWorkflowSpec:
     report_filename: str
     artifact_name: str
     image_width_inches: float
+    image_widths_inches: dict[str, float]
 
 
 def build_cloud_water_single_year_workflow(spec_path: Path) -> Path:
@@ -68,6 +71,7 @@ def build_cloud_water_single_year_workflow(spec_path: Path) -> Path:
                     "template": str(spec.template),
                     "output": str(staged_report),
                     "image_width_inches": spec.image_width_inches,
+                    "image_widths_inches": spec.image_widths_inches,
                 },
                 ensure_ascii=False,
                 indent=2,
@@ -137,6 +141,10 @@ def load_cloud_water_single_year_workflow_spec(
         or width <= 0
     ):
         raise ValueError("image_width_inches must be positive")
+    width_overrides = _image_width_overrides(
+        payload.get("image_widths_inches", {}),
+        IMAGE_SLOTS,
+    )
 
     return CloudWaterSingleYearWorkflowSpec(
         task_id=task_id,
@@ -149,6 +157,7 @@ def load_cloud_water_single_year_workflow_spec(
         report_filename=report_filename,
         artifact_name=artifact_name,
         image_width_inches=float(width),
+        image_widths_inches=width_overrides,
     )
 
 

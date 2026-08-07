@@ -1,15 +1,188 @@
 import matplotlib.pyplot as plt
 import numpy as np
+import pytest
 from shapely.geometry import box
 import xarray as xr
 
 from cwr_engine.business_metrics.cloud_water_figures import (
     _draw_map_panel,
+    _render_annual_maps,
     _render_monthly_sequence,
     _render_region_preview,
+    _render_season_maps,
     _tidy_colorbar_label,
     _tidy_colorbar_levels,
 )
+from cwr_engine.business_metrics.cloud_water_multi_year_figures import (
+    _render_interannual_sequence,
+)
+
+
+def test_interannual_sequence_uses_approved_abbreviations_and_typography(
+    tmp_path,
+    monkeypatch,
+):
+    annual_series = [
+        {
+            "year": year,
+            "equivalent_depth_mm": {
+                "GMv": 100.0 + index,
+                "GMh": 20.0 + index,
+                "MC": 10.0 + index,
+                "CWR": 5.0 + index,
+                "SP": 8.0 + index,
+            },
+            "values": {
+                "CEv": 2.0 + index / 10,
+                "RCh": 3.0 + index,
+                "PEh": 20.0 + index,
+            },
+        }
+        for index, year in enumerate(range(2021, 2026))
+    ]
+    captured = {}
+
+    def capture_figure(fig, target, *, dpi):
+        captured["figure"] = fig
+
+    monkeypatch.setattr(
+        "cwr_engine.business_metrics.cloud_water_multi_year_figures._save",
+        capture_figure,
+    )
+
+    _render_interannual_sequence(
+        annual_series,
+        tmp_path / "interannual.png",
+    )
+
+    figure = captured["figure"]
+    assert {axis.get_ylabel() for axis in figure.axes} == {
+        "GMv",
+        "CEv",
+        "GMh",
+        "Cvh",
+        "CWR",
+        "Ps",
+        "RTh",
+        "PEh",
+    }
+    assert all(axis.yaxis.label.get_fontsize() >= 24 for axis in figure.axes)
+    year_axis = next(axis for axis in figure.axes if axis.get_xlabel() == "Year")
+    assert all(
+        label.get_fontsize() >= 21 for label in year_axis.get_xticklabels()
+    )
+
+
+def test_annual_maps_use_panel_labels_and_aligned_colorbars(
+    tmp_path,
+    monkeypatch,
+):
+    values = np.arange(9, dtype=float).reshape(3, 3) + 1
+    spatial = xr.Dataset(
+        {
+            name: (("lat", "lon"), values * scale)
+            for scale, name in enumerate(
+                [f"pic3_{suffix}" for suffix in "abcdef"],
+                start=1,
+            )
+        },
+        coords={"lat": [40.0, 41.0, 42.0], "lon": [110.0, 111.0, 112.0]},
+    )
+    captured = {}
+
+    def capture_figure(fig, target, *, dpi):
+        captured["figure"] = fig
+
+    monkeypatch.setattr(
+        "cwr_engine.business_metrics.cloud_water_figures._save",
+        capture_figure,
+    )
+    _render_annual_maps(
+        spatial,
+        np.ones((3, 3), dtype=bool),
+        None,
+        tmp_path / "annual.png",
+    )
+
+    figure = captured["figure"]
+    figure.canvas.draw()
+    map_axes = figure.axes[:6]
+    colorbar_axes = figure.axes[6:]
+    assert [axis.texts[0].get_text() for axis in map_axes] == [
+        "(a)",
+        "(b)",
+        "(c)",
+        "(d)",
+        "(e)",
+        "(f)",
+    ]
+    assert all(axis.get_title() == "" for axis in map_axes)
+    assert [axis.get_title() for axis in colorbar_axes] == [
+        "GMv",
+        "CEv",
+        "CWR",
+        "GMh",
+        "Ps",
+        "PEh",
+    ]
+    assert all(not axis.get_xticklabels() for axis in map_axes[:4])
+    assert all(not axis.get_yticklabels() for axis in map_axes[1::2])
+    for map_axis, colorbar_axis in zip(map_axes, colorbar_axes):
+        assert colorbar_axis.get_position().height == pytest.approx(
+            map_axis.get_position().height,
+            abs=0.01,
+        )
+
+
+def test_season_maps_use_panel_labels_and_full_height_colorbar(
+    tmp_path,
+    monkeypatch,
+):
+    values = np.arange(9, dtype=float).reshape(3, 3) + 1
+    spatial = xr.Dataset(
+        {
+            f"season_{suffix}": (("lat", "lon"), values * scale)
+            for scale, suffix in enumerate("abcd", start=1)
+        },
+        coords={"lat": [40.0, 41.0, 42.0], "lon": [110.0, 111.0, 112.0]},
+    )
+    captured = {}
+
+    def capture_figure(fig, target, *, dpi):
+        captured["figure"] = fig
+
+    monkeypatch.setattr(
+        "cwr_engine.business_metrics.cloud_water_figures._save",
+        capture_figure,
+    )
+    _render_season_maps(
+        spatial,
+        np.ones((3, 3), dtype=bool),
+        None,
+        [f"season_{suffix}" for suffix in "abcd"],
+        "Ps",
+        tmp_path / "season.png",
+        zero_based=True,
+    )
+
+    figure = captured["figure"]
+    figure.canvas.draw()
+    map_axes = figure.axes[:4]
+    colorbar_axis = figure.axes[4]
+    assert [axis.texts[0].get_text() for axis in map_axes] == [
+        "(a)",
+        "(b)",
+        "(c)",
+        "(d)",
+    ]
+    assert all(axis.get_title() == "" for axis in map_axes)
+    assert colorbar_axis.get_title() == "Ps"
+    assert all(not axis.get_xticklabels() for axis in map_axes[:2])
+    assert all(not axis.get_yticklabels() for axis in map_axes[1::2])
+    panel_bottom = min(axis.get_position().y0 for axis in map_axes)
+    panel_top = max(axis.get_position().y1 for axis in map_axes)
+    assert colorbar_axis.get_position().y0 == pytest.approx(panel_bottom)
+    assert colorbar_axis.get_position().y1 == pytest.approx(panel_top)
 
 
 def test_monthly_sequence_uses_approved_abbreviations_and_typography(
@@ -177,13 +350,14 @@ def test_annual_map_panel_uses_tidy_colorbar_ticks():
         ]
         assert labels == [
             "200.0",
-            "300.0",
-            "400.0",
-            "500.0",
             "600.0",
-            "700.0",
-            "800.0",
             "900.0",
         ]
+        assert ax.texts[0].get_text() == "Field"
+        assert fig.axes[-1].get_title() == "mm"
+        assert all(
+            label.get_fontsize() >= 23
+            for label in fig.axes[-1].get_yticklabels()
+        )
     finally:
         plt.close(fig)

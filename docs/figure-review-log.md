@@ -52,3 +52,33 @@
   caption, and following explanatory text remain correctly placed. The
   multi-year artifact used the equivalent `-figure2-qa` output root because the
   standard multi-year output directory has an existing external lock.
+
+## Remaining report figures: interannual sequence and spatial maps
+
+- Review date: 2026-08-07.
+- Rule version: Figure Visual Acceptance Rules version 1. The review procedure
+  was updated from one-figure-at-a-time acceptance to one grouped review for
+  all figures in the same report stage.
+- Review scope: multi-year Figure 3, single-year Figure 3, multi-year Figure 4,
+  single-year Figures 4-5, and multi-year Figures 5-6. Figures 1-2 were also
+  rechecked during the final report render.
+- Typography and labels: the interannual sequence uses the approved `GMv`,
+  `CEv`, `GMh`, `Cvh`, `CWR`, `Ps`, `RTh`, and `PEh` abbreviations. Map axes,
+  panel labels, colorbar ticks, and colorbar abbreviations use 23-pt source
+  text. Maps use only `(a)`-style panel labels and no panel or overall titles.
+- Layout: annual maps use six independently scaled, vertically aligned
+  colorbars; seasonal maps use one colorbar aligned to the complete four-panel
+  region. Repeated longitude labels are limited to the bottom row and repeated
+  latitude labels to the left column. Map images are placed at 6.2 inches in
+  the final report while other figures retain the 4-inch default.
+- Spatial rendering: when a region geometry is available, contours retain the
+  source grid values and are clipped to the geometry after rendering. A
+  mask-to-NaN fallback is used only when no geometry is available.
+- Affected profiles: both single-year and multi-year cloud-water reports use
+  the same map renderer and per-image width override contract.
+- Acceptance result: passed. Both reports were regenerated, rendered through
+  LibreOffice, and inspected as complete documents and at full-size figure
+  pages. All figures fit the page, labels remain readable, colorbars align with
+  their panel regions, and no image, caption, or body text overlaps. The
+  multi-year QA artifact used the isolated `-remaining-figures-qa` output root
+  because the formal output directory remains externally locked.

@@ -18,6 +18,7 @@ from cwr_report.assembler import build_report
 from cwr_report.profiles.cloud_water_single_year import (
     _derive_boundary_tables,
     _derive_scalar_text,
+    _image_width_overrides,
     _seasonal_spatial_text,
     _spatial_description,
     _template_slots,
@@ -42,6 +43,7 @@ class CloudWaterMultiYearProfileSpec:
     output: Path
     images: dict[str, Path]
     image_width_inches: float
+    image_widths_inches: dict[str, float]
 
 
 @dataclass(frozen=True)
@@ -131,6 +133,10 @@ def load_cloud_water_multi_year_profile_spec(
         or width <= 0
     ):
         raise ValueError("image_width_inches must be positive")
+    width_overrides = _image_width_overrides(
+        payload.get("image_widths_inches", {}),
+        IMAGE_SLOTS,
+    )
     return CloudWaterMultiYearProfileSpec(
         report_id=indexed["task_id"],
         start_year=indexed["start_year"],
@@ -143,6 +149,7 @@ def load_cloud_water_multi_year_profile_spec(
         output=output,
         images=indexed["images"],
         image_width_inches=float(width),
+        image_widths_inches=width_overrides,
     )
 
 
@@ -410,7 +417,10 @@ def _generic_report_spec(
         "image_slots": {
             slot: {
                 "selector": {"kind": "profile_image", "name": slot},
-                "width_inches": spec.image_width_inches,
+                "width_inches": spec.image_widths_inches.get(
+                    slot,
+                    spec.image_width_inches,
+                ),
                 "alt_text": (
                     f"{spec.start_year}-{spec.end_year}年"
                     f"{spec.region_name}{slot}"

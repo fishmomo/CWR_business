@@ -199,13 +199,20 @@ Version 1 uses one JSON task:
   "template": "data/templates/Multi-Year_Evaluation_Report-cwr-v1.docx",
   "output_root": "artifacts/runs/nmg-zxb-cloud-water-2021-2025",
   "report_filename": "2021-2025-Year_Evaluation_Report-nmg-zxb.docx",
-  "image_width_inches": 4.0
+  "image_width_inches": 4.0,
+  "image_widths_inches": {
+    "target_image4": 6.2,
+    "target_image5": 6.2,
+    "target_image6": 6.2
+  }
 }
 ```
 
 `start_year` and `end_year` are the only report-period fields. The workflow
 does not accept arbitrary year lists, retained CSV/NetCDF intermediates, or
 explicit historical image paths.
+`image_width_inches` remains the default report image width, while the optional
+`image_widths_inches` object can override known image slots individually.
 
 ## Calculation Contract
 

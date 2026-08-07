@@ -17,5 +17,10 @@
   "template": "../../data/templates/Simple-Year_Evaluation_Report-xizang-cm.docx",
   "output_root": "../../artifacts/runs/nmg-zxb-cloud-water-single-year-2025",
   "report_filename": "2025-Year_Evaluation_Report-nmg-zxb.docx",
-  "image_width_inches": 4.0
+  "image_width_inches": 4.0,
+  "image_widths_inches": {
+    "target_image3": 6.2,
+    "target_image4": 6.2,
+    "target_image5": 6.2
+  }
 }

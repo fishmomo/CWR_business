@@ -62,6 +62,7 @@ def render_cloud_water_multi_year_figures(
         mask,
         geometry,
         [f"pic4_{suffix}" for suffix in "abcd"],
+        "Ps",
         targets["target_image5"],
         zero_based=True,
     )
@@ -70,6 +71,7 @@ def render_cloud_water_multi_year_figures(
         mask,
         geometry,
         [f"pic5_{suffix}" for suffix in "abcd"],
+        "CWR",
         targets["target_image6"],
         zero_based=False,
     )
@@ -88,30 +90,30 @@ def _render_interannual_sequence(
         (
             lambda row: row["equivalent_depth_mm"]["GMv"],
             lambda row: row["values"]["CEv"],
-            "GMv (mm)",
-            "CEv (%)",
+            "GMv",
+            "CEv",
         ),
         (
             lambda row: row["equivalent_depth_mm"]["GMh"],
             lambda row: row["equivalent_depth_mm"]["MC"],
-            "GMh (mm)",
-            "MC (mm)",
+            "GMh",
+            "Cvh",
         ),
         (
             lambda row: row["equivalent_depth_mm"]["CWR"],
             lambda row: row["equivalent_depth_mm"]["SP"],
-            "CWR (mm)",
-            "SP (mm)",
+            "CWR",
+            "Ps",
         ),
         (
             lambda row: row["values"]["RCh"],
             lambda row: row["values"]["PEh"],
-            "RCh (hour)",
-            "PEh (%)",
+            "RTh",
+            "PEh",
         ),
     ]
     positions = np.arange(len(years))
-    fig, axes = plt.subplots(4, 1, figsize=(8.0, 10.6), sharex=True)
+    fig, axes = plt.subplots(4, 1, figsize=(6.4, 8.5), sharex=True)
     try:
         for index, (bar_value, line_value, bar_label, line_label) in enumerate(
             panels
@@ -128,28 +130,42 @@ def _render_interannual_sequence(
                 line,
                 color="#111111",
                 marker="o",
-                linewidth=1.7,
-                markersize=4.8,
+                linewidth=2.4,
+                markersize=6.5,
                 zorder=3,
             )
             _pad_axis(ax, bars)
             _pad_axis(twin, line)
-            ax.set_ylabel(bar_label, color="#1454d8")
-            twin.set_ylabel(line_label, color="#111111")
-            ax.tick_params(axis="y", colors="#1454d8", direction="in")
-            twin.tick_params(axis="y", colors="#111111", direction="in")
+            ax.set_ylabel(bar_label, color="#1454d8", fontsize=24)
+            twin.set_ylabel(line_label, color="#111111", fontsize=24)
+            ax.tick_params(
+                axis="y",
+                colors="#1454d8",
+                direction="out",
+                labelsize=24,
+            )
+            twin.tick_params(
+                axis="y",
+                colors="#111111",
+                direction="out",
+                labelsize=24,
+            )
             ax.text(
-                0.02,
-                0.88,
+                0.015,
+                0.82,
                 f"({chr(ord('a') + index)})",
                 transform=ax.transAxes,
-                fontsize=12,
+                fontsize=24,
             )
             ax.grid(axis="y", color="#d8d8d8", linewidth=0.6, alpha=0.7)
         axes[-1].set_xticks(positions)
-        axes[-1].set_xticklabels(years, rotation=45 if len(years) > 12 else 0)
-        axes[-1].set_xlabel("Year")
-        fig.subplots_adjust(hspace=0.2, left=0.14, right=0.86)
+        axes[-1].set_xticklabels(
+            years,
+            rotation=45 if len(years) > 12 else 0,
+        )
+        axes[-1].tick_params(axis="x", direction="out", labelsize=21)
+        axes[-1].set_xlabel("Year", fontsize=24)
+        fig.subplots_adjust(hspace=0.22, left=0.17, right=0.83)
         _save(fig, target, dpi=180)
     finally:
         plt.close(fig)

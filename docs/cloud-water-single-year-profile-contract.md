@@ -29,11 +29,17 @@ five `profile_image` records indexed by `report_inputs.json`.
   "report_inputs": "run/report_inputs/report_inputs.json",
   "template": "Simple-Year_Evaluation_Report-xizang-cm.docx",
   "output": "report.docx",
-  "image_width_inches": 4.0
+  "image_width_inches": 4.0,
+  "image_widths_inches": {
+    "target_image3": 6.2
+  }
 }
 ```
 
 Relative paths resolve from the profile specification directory.
+`image_width_inches` is the default for every image. The optional
+`image_widths_inches` object overrides known image slots individually; unknown
+slots and non-positive widths fail validation.
 
 ## Derivation Rules
 

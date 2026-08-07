@@ -9,7 +9,7 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 from matplotlib.patches import PathPatch
 from matplotlib.path import Path as MatplotlibPath
-from matplotlib.ticker import FuncFormatter
+from matplotlib.ticker import FuncFormatter, MaxNLocator
 import numpy as np
 import xarray as xr
 
@@ -45,6 +45,7 @@ def render_cloud_water_figures(
         mask,
         geometry,
         [f"pic4_{suffix}" for suffix in "abcd"],
+        "Ps",
         targets["target_image4"],
         zero_based=True,
     )
@@ -53,6 +54,7 @@ def render_cloud_water_figures(
         mask,
         geometry,
         [f"pic5_{suffix}" for suffix in "abcd"],
+        "CWR",
         targets["target_image5"],
         zero_based=False,
     )
@@ -215,19 +217,20 @@ def _render_annual_maps(
     target: Path,
 ) -> None:
     panels = [
-        ("pic3_a", "GMv", "mm"),
-        ("pic3_b", "CEv", "%"),
-        ("pic3_c", "CWR", "mm"),
-        ("pic3_d", "GMh", "mm"),
-        ("pic3_e", "SP", "mm"),
-        ("pic3_f", "PEh", "%"),
+        ("pic3_a", "GMv"),
+        ("pic3_b", "CEv"),
+        ("pic3_c", "CWR"),
+        ("pic3_d", "GMh"),
+        ("pic3_e", "Ps"),
+        ("pic3_f", "PEh"),
     ]
-    missing = [name for name, _, _ in panels if name not in spatial]
+    missing = [name for name, _ in panels if name not in spatial]
     if missing:
         raise ValueError(f"Annual figure is missing spatial field {missing[0]}")
-    fig, axes = plt.subplots(3, 2, figsize=(12.0, 6.8))
+    fig, axes = plt.subplots(3, 2, figsize=(11.0, 7.4))
     try:
-        for index, (name, title, unit) in enumerate(panels):
+        for index, (name, display_label) in enumerate(panels):
+            row, column = divmod(index, 2)
             _draw_map_panel(
                 fig,
                 axes.flat[index],
@@ -235,10 +238,12 @@ def _render_annual_maps(
                 mask,
                 geometry,
                 name,
-                f"({chr(ord('a') + index)}) {title}",
-                unit,
+                f"({chr(ord('a') + index)})",
+                display_label,
+                show_x_labels=row == 2,
+                show_y_labels=column == 0,
             )
-        fig.subplots_adjust(hspace=0.28, wspace=0.28)
+        fig.subplots_adjust(hspace=0.48, wspace=0.62)
         _save(fig, target, dpi=180)
     finally:
         plt.close(fig)
@@ -249,6 +254,7 @@ def _render_season_maps(
     mask: np.ndarray,
     geometry,
     variables: list[str],
+    colorbar_label: str,
     target: Path,
     *,
     zero_based: bool,
@@ -262,14 +268,13 @@ def _render_season_maps(
         [spatial[name].values[mask].astype(float) for name in variables]
     )
     levels = _tidy_colorbar_levels(values, zero_based=zero_based)
-    seasons = ["Spring", "Summer", "Autumn", "Winter"]
-    fig = plt.figure(figsize=(11.4, 5.8))
+    fig = plt.figure(figsize=(10.8, 5.8))
     grid = fig.add_gridspec(
         2,
         3,
         width_ratios=[1, 1, 0.045],
-        hspace=0.3,
-        wspace=0.2,
+        hspace=0.25,
+        wspace=0.18,
     )
     axes = [
         fig.add_subplot(grid[row, column])
@@ -279,7 +284,8 @@ def _render_season_maps(
     colorbar_axis = fig.add_subplot(grid[:, 2])
     try:
         contour = None
-        for index, (name, season) in enumerate(zip(variables, seasons)):
+        for index, name in enumerate(variables):
+            row, column = divmod(index, 2)
             contour = _draw_map_panel(
                 fig,
                 axes[index],
@@ -287,20 +293,22 @@ def _render_season_maps(
                 mask,
                 geometry,
                 name,
-                f"({chr(ord('a') + index)}) {season}",
+                f"({chr(ord('a') + index)})",
                 None,
                 levels=levels,
+                show_x_labels=row == 1,
+                show_y_labels=column == 0,
             )
         if contour is None:
             raise ValueError("Seasonal figure produced no contour")
         colorbar = fig.colorbar(
             contour,
             cax=colorbar_axis,
-            label="mm",
-            ticks=levels,
+            ticks=_colorbar_ticks(levels, max_ticks=6),
             format=FuncFormatter(_tidy_colorbar_label),
         )
         colorbar.update_ticks()
+        _style_colorbar(colorbar, colorbar_label)
         _save(fig, target, dpi=180)
     finally:
         plt.close(fig)
@@ -313,10 +321,12 @@ def _draw_map_panel(
     mask: np.ndarray,
     geometry,
     variable: str,
-    title: str,
-    unit: str | None,
+    panel_label: str,
+    colorbar_label: str | None,
     *,
     levels: np.ndarray | None = None,
+    show_x_labels: bool = True,
+    show_y_labels: bool = True,
 ):
     lon = spatial["lon"].values
     lat = spatial["lat"].values
@@ -340,7 +350,6 @@ def _draw_map_panel(
         data,
         levels=panel_levels,
         cmap=MAP_COLORMAP,
-        extend="both",
     )
     if geometry is not None:
         _clip_contour_to_geometry(ax, contour, geometry)
@@ -361,20 +370,46 @@ def _draw_map_panel(
         mask,
         geometry,
         padding=(0.035, 0.07),
+        tick_labelsize=23,
+        show_x_labels=show_x_labels,
+        show_y_labels=show_y_labels,
     )
-    ax.set_title(title, loc="left", fontsize=11)
-    if unit is not None:
+    ax.text(
+        0.02,
+        0.95,
+        panel_label,
+        transform=ax.transAxes,
+        fontsize=23,
+        ha="left",
+        va="top",
+        zorder=6,
+        bbox={"facecolor": "white", "edgecolor": "none", "alpha": 0.72},
+    )
+    if colorbar_label is not None:
         colorbar = fig.colorbar(
             contour,
             ax=ax,
-            label=unit,
-            fraction=0.04,
-            pad=0.025,
-            ticks=panel_levels,
+            fraction=0.055,
+            pad=0.035,
+            ticks=_colorbar_ticks(panel_levels, max_ticks=3),
             format=FuncFormatter(_tidy_colorbar_label),
         )
         colorbar.update_ticks()
+        _style_colorbar(colorbar, colorbar_label)
     return contour
+
+
+def _colorbar_ticks(levels: np.ndarray, *, max_ticks: int) -> np.ndarray:
+    levels = np.asarray(levels, dtype=float)
+    if levels.size <= max_ticks:
+        return levels
+    indices = np.rint(np.linspace(0, levels.size - 1, max_ticks)).astype(int)
+    return levels[np.unique(indices)]
+
+
+def _style_colorbar(colorbar, label: str) -> None:
+    colorbar.ax.tick_params(labelsize=23)
+    colorbar.ax.set_title(label, fontsize=23, pad=5)
 
 
 def _levels(values: np.ndarray, *, zero_based: bool = False) -> np.ndarray:
@@ -566,6 +601,8 @@ def _configure_map_axis(
     *,
     padding: tuple[float, float],
     tick_labelsize: float = 8,
+    show_x_labels: bool = True,
+    show_y_labels: bool = True,
 ) -> None:
     lon_edges = _coordinate_edges(lon)
     lat_edges = _coordinate_edges(lat)
@@ -596,7 +633,18 @@ def _configure_map_axis(
     )
     ax.xaxis.set_major_formatter(FuncFormatter(lambda value, _: f"{value:g}°E"))
     ax.yaxis.set_major_formatter(FuncFormatter(lambda value, _: f"{value:g}°N"))
-    ax.tick_params(labelsize=tick_labelsize, direction="out")
+    ax.xaxis.set_major_locator(
+        MaxNLocator(nbins=2, steps=[1, 2, 2.5, 5, 10])
+    )
+    ax.yaxis.set_major_locator(
+        MaxNLocator(nbins=3, steps=[1, 2, 2.5, 5, 10])
+    )
+    ax.tick_params(
+        labelsize=tick_labelsize,
+        direction="out",
+        labelbottom=show_x_labels,
+        labelleft=show_y_labels,
+    )
 
 
 def _save(fig, target: Path, *, dpi: int) -> None:

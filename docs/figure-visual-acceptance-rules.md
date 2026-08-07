@@ -71,8 +71,9 @@ The following mapping is authoritative for figure labels:
 ## Current impact range
 
 This version applies immediately to every newly generated or modified figure.
-Existing artifacts are not silently treated as compliant. They are reviewed
-and changed one figure at a time.
+Existing artifacts are not silently treated as compliant. Figures in the same
+report stage are reviewed as one group, followed by one combined report-level
+render and acceptance pass.
 
 The known review scope is:
 
@@ -83,8 +84,8 @@ The known review scope is:
 
 Known existing mismatches include sub-12-pt legend or title text, default-small
 Matplotlib axis ticks, historical labels such as `MC`, `SP`, and `RCh`, and
-multi-panel map titles. These are remediation candidates, not permission for a
-bulk visual change without per-figure review.
+multi-panel map titles. These are remediation candidates, not permission for
+unreviewed bulk visual changes.
 
 ## Per-figure change record
 

@@ -104,6 +104,7 @@ class CloudWaterProfileSpec:
     output: Path
     images: dict[str, Path]
     image_width_inches: float
+    image_widths_inches: dict[str, float]
 
 
 @dataclass(frozen=True)
@@ -203,6 +204,10 @@ def load_cloud_water_profile_spec(path: Path) -> CloudWaterProfileSpec:
         or width <= 0
     ):
         raise ValueError("image_width_inches must be positive")
+    width_overrides = _image_width_overrides(
+        payload.get("image_widths_inches", {}),
+        IMAGE_SLOTS,
+    )
     output = _path(base, payload, "output")
     template = _existing_path(base, payload.get("template"), "template")
     if output.suffix.lower() != ".docx":
@@ -220,6 +225,7 @@ def load_cloud_water_profile_spec(path: Path) -> CloudWaterProfileSpec:
         output=output,
         images=images,
         image_width_inches=float(width),
+        image_widths_inches=width_overrides,
     )
 
 
@@ -579,12 +585,36 @@ def _generic_report_spec(
         "image_slots": {
             slot: {
                 "selector": {"kind": "profile_image", "name": slot},
-                "width_inches": spec.image_width_inches,
+                "width_inches": spec.image_widths_inches.get(
+                    slot,
+                    spec.image_width_inches,
+                ),
                 "alt_text": f"{spec.year}年{spec.region_name}{slot}",
             }
             for slot in IMAGE_SLOTS
         },
     }
+
+
+def _image_width_overrides(
+    value: Any,
+    slots: list[str],
+) -> dict[str, float]:
+    if not isinstance(value, dict):
+        raise ValueError("image_widths_inches must be an object")
+    unknown = sorted(set(value) - set(slots))
+    if unknown:
+        raise ValueError(f"Unknown image width slot: {unknown[0]}")
+    overrides = {}
+    for slot, width in value.items():
+        if (
+            not isinstance(width, (int, float))
+            or isinstance(width, bool)
+            or width <= 0
+        ):
+            raise ValueError(f"Image width for {slot} must be positive")
+        overrides[slot] = float(width)
+    return overrides
 
 
 def _template_slots(path: Path) -> set[str]:

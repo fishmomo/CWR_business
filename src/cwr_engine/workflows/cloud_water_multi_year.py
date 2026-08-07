@@ -20,8 +20,10 @@ from cwr_engine.workflows.cloud_water_single_year import (
     _rebase_paths,
 )
 from cwr_report.profiles.cloud_water_multi_year import (
+    IMAGE_SLOTS,
     build_cloud_water_multi_year_report,
 )
+from cwr_report.profiles.cloud_water_single_year import _image_width_overrides
 
 
 WORKFLOW_NAME = "cloud_water_multi_year"
@@ -40,6 +42,7 @@ class CloudWaterMultiYearWorkflowSpec:
     report_filename: str
     artifact_name: str
     image_width_inches: float
+    image_widths_inches: dict[str, float]
 
 
 def build_cloud_water_multi_year_workflow(spec_path: Path) -> Path:
@@ -84,6 +87,7 @@ def build_cloud_water_multi_year_workflow(spec_path: Path) -> Path:
                     "template": str(spec.template),
                     "output": str(staged_report),
                     "image_width_inches": spec.image_width_inches,
+                    "image_widths_inches": spec.image_widths_inches,
                 },
                 ensure_ascii=False,
                 indent=2,
@@ -147,6 +151,10 @@ def load_cloud_water_multi_year_workflow_spec(
         or width <= 0
     ):
         raise ValueError("image_width_inches must be positive")
+    width_overrides = _image_width_overrides(
+        payload.get("image_widths_inches", {}),
+        IMAGE_SLOTS,
+    )
     product_source = _product_source(base, payload.get("product_source"))
     product_source = {
         **product_source,
@@ -164,6 +172,7 @@ def load_cloud_water_multi_year_workflow_spec(
         report_filename=report_filename,
         artifact_name=artifact_name,
         image_width_inches=float(width),
+        image_widths_inches=width_overrides,
     )
 
 
