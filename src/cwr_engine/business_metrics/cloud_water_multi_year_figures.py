@@ -163,8 +163,8 @@ def _render_interannual_sequence(
             years,
             rotation=45 if len(years) > 12 else 0,
         )
-        axes[-1].tick_params(axis="x", direction="out", labelsize=21)
-        axes[-1].set_xlabel("Year", fontsize=24)
+        axes[-1].tick_params(axis="x", direction="out", labelsize=15)
+        axes[-1].set_xlabel("Year", fontsize=16)
         fig.subplots_adjust(hspace=0.22, left=0.17, right=0.83)
         _save(fig, target, dpi=180)
     finally:

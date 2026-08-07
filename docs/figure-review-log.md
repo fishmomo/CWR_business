@@ -82,3 +82,14 @@
   their panel regions, and no image, caption, or body text overlaps. The
   multi-year QA artifact used the isolated `-remaining-figures-qa` output root
   because the formal output directory remains externally locked.
+
+## X-axis typography override
+
+- Change date: 2026-08-07.
+- Scope: all single-year and multi-year cloud-water figures.
+- New setting: sequence `xlabel` text is 16 pt; sequence `xticklabel` text is
+  15 pt; map and region coordinate tick labels are 15 pt.
+- Unchanged elements: y-axis labels and ticks, colorbars, legends, titles, and
+  panel labels retain their previously accepted settings.
+- Review result: automated tests only. Visual PNG and DOCX review was
+  explicitly skipped for this adjustment.

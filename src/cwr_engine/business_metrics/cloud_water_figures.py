@@ -102,7 +102,7 @@ def _render_region_preview(
             mask,
             geometry,
             padding=(0.12, 0.16),
-            tick_labelsize=22,
+            tick_labelsize=15,
         )
         ax.grid(color="#c8c8c8", linewidth=0.7, alpha=0.8)
         ax.set_title("Cloud-Water Evaluation Region", fontsize=22, pad=12)
@@ -196,14 +196,14 @@ def _render_monthly_sequence(metrics: dict[str, Any], target: Path) -> None:
             ax.grid(axis="y", color="#d8d8d8", linewidth=0.6, alpha=0.7)
             ax.margins(x=0.04)
         axes[-1].set_xticks(months)
-        axes[-1].tick_params(axis="x", direction="out", labelsize=21)
+        axes[-1].tick_params(axis="x", direction="out", labelsize=15)
         plt.setp(
             axes[-1].get_xticklabels(),
             ha="right",
             rotation=45,
             rotation_mode="anchor",
         )
-        axes[-1].set_xlabel("Month", fontsize=24)
+        axes[-1].set_xlabel("Month", fontsize=16)
         fig.subplots_adjust(hspace=0.22, left=0.17, right=0.83)
         _save(fig, target, dpi=180)
     finally:
@@ -370,7 +370,7 @@ def _draw_map_panel(
         mask,
         geometry,
         padding=(0.035, 0.07),
-        tick_labelsize=23,
+        tick_labelsize=15,
         show_x_labels=show_x_labels,
         show_y_labels=show_y_labels,
     )

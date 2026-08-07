@@ -69,8 +69,9 @@ def test_interannual_sequence_uses_approved_abbreviations_and_typography(
     assert all(axis.yaxis.label.get_fontsize() >= 24 for axis in figure.axes)
     year_axis = next(axis for axis in figure.axes if axis.get_xlabel() == "Year")
     assert all(
-        label.get_fontsize() >= 21 for label in year_axis.get_xticklabels()
+        label.get_fontsize() == 15 for label in year_axis.get_xticklabels()
     )
+    assert year_axis.xaxis.label.get_fontsize() == 16
 
 
 def test_annual_maps_use_panel_labels_and_aligned_colorbars(
@@ -248,8 +249,9 @@ def test_monthly_sequence_uses_approved_abbreviations_and_typography(
         axis for axis in figure.axes if axis.get_xlabel() == "Month"
     )
     assert all(
-        label.get_fontsize() >= 21 for label in month_axis.get_xticklabels()
+        label.get_fontsize() == 15 for label in month_axis.get_xticklabels()
     )
+    assert month_axis.xaxis.label.get_fontsize() == 16
     assert all(
         label.get_rotation() == 45 for label in month_axis.get_xticklabels()
     )
@@ -284,8 +286,8 @@ def test_region_preview_uses_approved_single_figure_typography(
     axis = captured["figure"].axes[0]
     assert axis.get_title() == "Cloud-Water Evaluation Region"
     assert axis.title.get_fontsize() >= 22
-    assert all(label.get_fontsize() >= 22 for label in axis.get_xticklabels())
-    assert all(label.get_fontsize() >= 22 for label in axis.get_yticklabels())
+    assert all(label.get_fontsize() == 15 for label in axis.get_xticklabels())
+    assert all(label.get_fontsize() == 15 for label in axis.get_yticklabels())
     legend = axis.get_legend()
     assert [text.get_text() for text in legend.get_texts()] == [
         "Grid centers",

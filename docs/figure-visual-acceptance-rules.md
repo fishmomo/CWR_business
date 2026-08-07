@@ -25,6 +25,12 @@ NetCDF variables, metric JSON fields, registry keys, or calculation formulas.
 - Panel labels use a consistent top-left position. They must be at least 12 pt
   and should normally use 14-16 pt.
 
+Current explicit override, effective 2026-08-07: cloud-water report x-axis
+labels use 16-pt source text and x-axis tick labels use 15-pt source text.
+Map and region coordinate tick labels also use 15-pt source text. This
+override applies to both single-year and multi-year figures and supersedes the
+earlier larger x-axis settings.
+
 ## Labels and titles
 
 - Y-axis variable labels use the approved abbreviation only, not an expanded
