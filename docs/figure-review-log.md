@@ -115,3 +115,14 @@
   y-axis tick labels use 15-pt source text.
 - Reason: the retained 24-pt y-axis typography was visibly disproportionate
   after the x-axis was reduced, causing crowded units and tick labels.
+
+## Seasonal colorbar tick spacing
+
+- Change date: 2026-08-10.
+- Scope: shared colorbars in single-year Figures 4-5 and multi-year Figures
+  5-6.
+- New setting: displayed ticks are sampled with one fixed level stride, so all
+  adjacent tick values have the same interval while respecting the maximum
+  tick count.
+- Review result: covered by automated equal-spacing tests; visual review is
+  skipped under the current review preference.

@@ -303,7 +303,11 @@ def _render_season_maps(
         colorbar = fig.colorbar(
             contour,
             cax=colorbar_axis,
-            ticks=_colorbar_ticks(levels, max_ticks=6),
+            ticks=_colorbar_ticks(
+                levels,
+                max_ticks=6,
+                equal_spacing=True,
+            ),
             format=FuncFormatter(_tidy_colorbar_label),
         )
         colorbar.update_ticks()
@@ -398,10 +402,18 @@ def _draw_map_panel(
     return contour
 
 
-def _colorbar_ticks(levels: np.ndarray, *, max_ticks: int) -> np.ndarray:
+def _colorbar_ticks(
+    levels: np.ndarray,
+    *,
+    max_ticks: int,
+    equal_spacing: bool = False,
+) -> np.ndarray:
     levels = np.asarray(levels, dtype=float)
     if levels.size <= max_ticks:
         return levels
+    if equal_spacing:
+        stride = int(np.ceil(levels.size / max_ticks))
+        return levels[::stride]
     indices = np.rint(np.linspace(0, levels.size - 1, max_ticks)).astype(int)
     return levels[np.unique(indices)]
 

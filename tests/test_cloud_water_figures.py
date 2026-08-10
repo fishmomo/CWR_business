@@ -5,6 +5,7 @@ from shapely.geometry import box
 import xarray as xr
 
 from cwr_engine.business_metrics.cloud_water_figures import (
+    _colorbar_ticks,
     _draw_map_panel,
     _render_annual_maps,
     _render_monthly_sequence,
@@ -312,6 +313,19 @@ def test_figure_five_colorbar_uses_one_decimal_below_one_thousand():
     )
     assert _tidy_colorbar_label(levels[0]) == "200.0"
     assert _tidy_colorbar_label(levels[-1]) == "900.0"
+
+
+def test_seasonal_colorbar_ticks_are_equally_spaced():
+    levels = np.arange(200.0, 901.0, 100.0)
+
+    ticks = _colorbar_ticks(
+        levels,
+        max_ticks=6,
+        equal_spacing=True,
+    )
+
+    assert np.array_equal(ticks, np.array([200.0, 400.0, 600.0, 800.0]))
+    assert np.all(np.diff(ticks) == 200.0)
 
 
 def test_figure_five_colorbar_uses_clean_hundreds_for_large_values():
