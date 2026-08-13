@@ -160,7 +160,8 @@ def test_catalog_loads_only_requested_files_and_normalizes_coordinates(
         tmp_path / "result" / "export" / "monthly_grid.nc",
         engine="scipy",
     )
-    assert list(grid.dims) == ["lat", "lon"]
+    assert list(grid.dims) == ["period", "lat", "lon"]
+    assert list(grid["period"].values) == ["2025-01", "2025-02"]
     assert np.all(np.diff(grid["lat"].values) > 0)
     assert np.all(np.diff(grid["lon"].values) > 0)
     assert grid["Ps"].attrs["source_variable"] == "SP"

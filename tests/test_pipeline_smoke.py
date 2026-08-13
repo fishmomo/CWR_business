@@ -313,6 +313,27 @@ def test_multiple_operators_grid_nc_names_each_result(tmp_path: Path):
     assert dataset["temp_mean"].attrs["units"] == "degC"
 
 
+def test_multiple_time_slices_grid_nc_preserves_each_period(tmp_path: Path):
+    task_path = _write_two_variable_task(
+        tmp_path,
+        outputs=[{"kind": "grid_nc", "name": "monthly_grids"}],
+        workflow_steps=["prepare", "mask", "subset", "transform", "export"],
+    )
+    payload = json.loads(task_path.read_text(encoding="utf-8"))
+    payload["time_slices"] = [
+        {"scale": "month", "year": 2025, "month": 1},
+        {"scale": "month", "year": 2025, "month": 2},
+    ]
+    task_path.write_text(json.dumps(payload), encoding="utf-8")
+    root = run_task(task_path, tmp_path / "result")
+    dataset = xr.load_dataset(
+        root / "export" / "monthly_grids.nc",
+        engine="scipy",
+    )
+    assert list(dataset["period"].values) == ["2025-01", "2025-02"]
+    assert dataset["temp"].dims == ("period", "lat", "lon")
+
+
 def test_source_scale_must_match_requested_time_slice(tmp_path: Path):
     task_path = _write_demo_task(
         tmp_path,

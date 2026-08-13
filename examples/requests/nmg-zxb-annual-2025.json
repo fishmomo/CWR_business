@@ -1,0 +1,30 @@
+{
+  "schema_version": 1,
+  "request_id": "nmg-zxb-annual-2025",
+  "data_source": {
+    "kind": "netcdf",
+    "root": "H:\\result_china\\NCEP",
+    "engine": "h5netcdf"
+  },
+  "region": {
+    "kind": "shp",
+    "path": "../../data/inputs/内蒙古中西部/内蒙古中西部_7盟市融合研究区.shp"
+  },
+  "period": {
+    "scale": "year",
+    "years": [2025]
+  },
+  "variables": ["GMv", "GMh", "CWR", "Ps"],
+  "operators": ["mean"],
+  "results": [
+    {"scope": "region", "format": "csv", "name": "annual_regional"},
+    {"scope": "grid", "format": "netcdf", "name": "annual_grids"},
+    {
+      "scope": "grid",
+      "format": "figure",
+      "plot": "distribution",
+      "name": "annual_distribution"
+    }
+  ],
+  "output_root": "../../artifacts/runs/nmg-zxb-annual-request-2025"
+}

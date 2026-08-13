@@ -2,6 +2,7 @@ import argparse
 import json
 from pathlib import Path
 
+from cwr_engine.business_request import run_business_request
 from cwr_engine.business_metrics.cloud_water import (
     build_cloud_water_business_metrics,
 )
@@ -18,11 +19,18 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser()
     requests = parser.add_mutually_exclusive_group(required=True)
     requests.add_argument("--task")
+    requests.add_argument("--request")
     requests.add_argument("--business-metrics-spec")
     requests.add_argument("--workflow-spec")
     parser.add_argument("--output-root", required=False)
     args = parser.parse_args(argv)
-    if args.workflow_spec:
+    if args.request:
+        output = run_business_request(
+            Path(args.request),
+            Path(args.output_root) if args.output_root else None,
+        )
+        print(output)
+    elif args.workflow_spec:
         if args.output_root:
             parser.error("--output-root cannot be used with --workflow-spec")
         workflow_path = Path(args.workflow_spec)

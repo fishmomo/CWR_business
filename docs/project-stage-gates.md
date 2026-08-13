@@ -751,9 +751,9 @@ NetCDF files and all eleven PNGs byte-identical, while both DOCX reports pass
 structural checks after regeneration. The full suite passes with 72 tests in
 `cwr_py312`.
 
-## Next planned stage: unified business request entrypoint
+## Completed stage: unified business request entrypoint
 
-Status: planned, not active.
+Status: completed on 2026-08-13.
 
 ### Outcome
 
@@ -761,3 +761,67 @@ Define one user-facing request contract for data source, mandatory region,
 year/month/day period selection, requested physical variables, regional or
 gridded results, and CSV/NetCDF/figure outputs. Existing report workflows remain
 thin optional products above that request contract.
+
+### Included
+
+- Add one strict, versioned JSON request contract and `--request` CLI entrypoint.
+- Resolve request-relative source, SHP, mask, and output paths consistently.
+- Normalize friendly year, month, and day selections into engine time slices
+  without cross-scale resampling.
+- Translate regional/gridded CSV, NetCDF, and standard figure requests into the
+  existing engine output model.
+- Register the complete approved cloud-water variable abbreviation set.
+- Preserve every selected period in multi-period gridded NetCDF outputs.
+- Write a standard request manifest for optional upper-layer products.
+
+### Excluded
+
+- New operators, plot types, formulas, report templates, GUI, or Web UI.
+- Cross-scale resampling, schedulers, retries, distributed execution, or a
+  second calculation pipeline.
+- Moving the accepted cloud-water report workflows onto the new entrypoint.
+
+### Acceptance
+
+- Year ranges, selected months across years, exact month lists, date ranges,
+  and exact dates normalize deterministically.
+- SHP, existing-mask, and bounding-box inputs always produce the required
+  internal mask stage.
+- Invalid requests fail before the output directory is created.
+- A synthetic multi-month request produces CSV, period-preserving NetCDF,
+  figures, and a complete request manifest from one command.
+- A real 2025 SHP request runs against the official annual product catalog.
+- The full test suite passes in `cwr_py312`.
+
+### Stop condition
+
+The stage ends when the protocol, validation, compiler, CLI, synthetic and real
+acceptance requests, documentation, and full regression pass and are committed
+as one independent milestone. New products and migration of report workflows
+remain separate stages.
+
+The acceptance checks pass. One strict `--request` command now normalizes
+annual ranges or lists, selected months or exact month items, and daily ranges
+or lists into the existing engine model. Region input is mandatory and every
+SHP, existing mask, or bounding box still passes through the mask stage. The
+adapter translates five business-facing output combinations, registers all
+sixteen approved cloud-water abbreviations and their historical source aliases,
+and preserves multiple selected periods in gridded NetCDF. A real Inner
+Mongolia central-western 2025 request compiled the source SHP, read the official
+annual product, and published one regional CSV, one four-variable NetCDF, four
+distribution figures, and a complete request manifest. The full suite passes
+with 88 tests in `cwr_py312`. Per the current working rule, no additional visual
+figure-review pass was performed because this stage did not introduce a new
+plot type or formal report layout.
+
+## Next planned stage: upper-layer product request integration
+
+Status: planned, not active.
+
+### Outcome
+
+Let report and thematic-product workflows declare or consume the standardized
+business request and its manifest instead of owning data-source, region,
+period, and common-output selection independently. Start with one accepted
+cloud-water workflow and retain its existing formula, figure, and DOCX
+contracts.

@@ -17,6 +17,16 @@ Run a task through the installed CLI:
 conda run -n cwr_py312 cwr-engine --task tests/fixtures/minimal_task.json --output-root artifacts/runs/smoke
 ```
 
+For common business computations, use the simplified request contract instead
+of writing internal time slices, workflow steps, and output kinds manually:
+
+```powershell
+conda run -n cwr_py312 cwr-engine --request examples/requests/nmg-zxb-annual-2025.json
+```
+
+The request fields and year/month/day selection forms are documented in
+`docs/unified-business-request-contract.md`.
+
 Real NetCDF product catalogs and their `D/M/Y` directory contract are
 documented in `docs/real-product-data-source-contract.md`.
 

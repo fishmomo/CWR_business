@@ -30,13 +30,24 @@ def run(context: dict) -> dict:
         grid_variables = {}
         multiple_operators = len(context["task"].operators) > 1
         for variable, result in context["variable_results"].items():
-            masked_data = result["transformed_slices"][0]["masked_data"]
             for operator in context["task"].operators:
                 output_name = (
                     f"{variable}_{operator}" if multiple_operators else variable
                 )
                 reducer = context["operator_registry"][operator]["apply"]
-                grid_data = reducer(masked_data, dim="time").rename(output_name)
+                grids = [
+                    reducer(item["masked_data"], dim="time")
+                    for item in result["transformed_slices"]
+                ]
+                if len(grids) == 1:
+                    grid_data = grids[0]
+                else:
+                    labels = [
+                        item["time_slice"].label
+                        for item in result["transformed_slices"]
+                    ]
+                    grid_data = xr.concat(grids, dim=xr.IndexVariable("period", labels))
+                grid_data = grid_data.rename(output_name)
                 grid_data.attrs["operator"] = operator
                 grid_data.attrs["source_variable"] = result["source_key"]
                 grid_variables[output_name] = grid_data

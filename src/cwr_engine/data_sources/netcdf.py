@@ -7,7 +7,7 @@ import re
 import numpy as np
 import xarray as xr
 
-from cwr_engine.registries.variables import resolve_source_key
+from cwr_engine.registries.variables import resolve_source_keys
 
 
 SCALE_CODES = {"day": "D", "month": "M", "year": "Y"}
@@ -99,7 +99,7 @@ def _load_product_file(
         source_keys = []
         for variable in variables:
             try:
-                source_key = resolve_source_key(
+                resolved_keys = resolve_source_keys(
                     variable,
                     variable_registry,
                     dataset,
@@ -107,8 +107,9 @@ def _load_product_file(
                 )
             except ValueError as error:
                 raise ValueError(f"{error} in {path}") from error
-            if source_key not in source_keys:
-                source_keys.append(source_key)
+            for source_key in resolved_keys:
+                if source_key not in source_keys:
+                    source_keys.append(source_key)
         return dataset[source_keys].load()
 
 

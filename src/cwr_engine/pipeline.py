@@ -84,6 +84,10 @@ def _validate_time_scales(
 
 def run_task(task_path: Path, output_root: Path | None = None) -> Path:
     task = load_task(task_path)
+    return run_engine_task(task, task_path, output_root)
+
+
+def run_engine_task(task, task_path: Path, output_root: Path | None = None) -> Path:
     variable_registry = build_variable_registry()
     operator_registry = build_operator_registry()
     plot_registry = build_plot_registry()
