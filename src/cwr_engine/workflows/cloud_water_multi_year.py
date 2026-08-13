@@ -6,24 +6,25 @@ from pathlib import Path
 import tempfile
 from typing import Any
 
-from cwr_engine.business_metrics.cloud_water import (
-    _path,
-    _product_source,
-    _region_spec,
-    _required_text,
+from cwr_engine.business_metrics.cloud_water_config import (
+    existing_file,
+    normalize_product_source,
+    normalize_region_spec,
+    required_text,
+    resolve_path,
 )
 from cwr_engine.business_metrics.cloud_water_multi_year import (
     build_cloud_water_multi_year_business_metrics,
 )
-from cwr_engine.workflows.cloud_water_single_year import (
-    _publish_directory,
-    _rebase_paths,
+from cwr_engine.workflows.cloud_water_shared import (
+    finalize_report_inputs,
+    publish_directory,
 )
 from cwr_report.profiles.cloud_water_multi_year import (
     IMAGE_SLOTS,
     build_cloud_water_multi_year_report,
 )
-from cwr_report.profiles.cloud_water_single_year import _image_width_overrides
+from cwr_report.profiles.cloud_water_shared import image_width_overrides
 
 
 WORKFLOW_NAME = "cloud_water_multi_year"
@@ -95,13 +96,14 @@ def build_cloud_water_multi_year_workflow(spec_path: Path) -> Path:
             encoding="utf-8",
         )
         build_cloud_water_multi_year_report(profile_spec)
-        _finalize_report_inputs(
+        finalize_report_inputs(
             report_inputs,
             staged_output,
             spec.output_root,
             spec.report_filename,
+            workflow_name=WORKFLOW_NAME,
         )
-        _publish_directory(staged_output, spec.output_root)
+        publish_directory(staged_output, spec.output_root)
     return spec.output_root / "report" / spec.report_filename
 
 
@@ -120,10 +122,10 @@ def load_cloud_water_multi_year_workflow_spec(
     if end_year - start_year + 1 < 5:
         raise ValueError("Multi-year report requires at least five years")
     base = path.parent
-    output_root = _path(base, payload, "output_root")
+    output_root = resolve_path(base, payload, "output_root")
     if output_root.exists() and not output_root.is_dir():
         raise ValueError(f"output_root is not a directory: {output_root}")
-    template = _existing_file(base, payload, "template")
+    template = existing_file(base, payload, "template")
     report_filename = payload.get(
         "report_filename",
         f"{start_year}-{end_year}-cloud-water-report.docx",
@@ -151,22 +153,22 @@ def load_cloud_water_multi_year_workflow_spec(
         or width <= 0
     ):
         raise ValueError("image_width_inches must be positive")
-    width_overrides = _image_width_overrides(
+    width_overrides = image_width_overrides(
         payload.get("image_widths_inches", {}),
         IMAGE_SLOTS,
     )
-    product_source = _product_source(base, payload.get("product_source"))
-    product_source = {
-        **product_source,
-        "root": str(product_source["root"]),
-    }
+    product_source = normalize_product_source(
+        base,
+        payload.get("product_source"),
+        serialize_root=True,
+    )
     return CloudWaterMultiYearWorkflowSpec(
-        task_id=_required_text(payload, "task_id"),
+        task_id=required_text(payload, "task_id"),
         start_year=start_year,
         end_year=end_year,
-        region_name=_required_text(payload, "region_name"),
+        region_name=required_text(payload, "region_name"),
         product_source=product_source,
-        region_spec=_region_spec(base, payload.get("region_spec")),
+        region_spec=normalize_region_spec(base, payload.get("region_spec")),
         template=template,
         output_root=output_root,
         report_filename=report_filename,
@@ -176,41 +178,8 @@ def load_cloud_water_multi_year_workflow_spec(
     )
 
 
-def _finalize_report_inputs(
-    path: Path,
-    staged_output: Path,
-    final_output: Path,
-    report_filename: str,
-) -> None:
-    payload = json.loads(path.read_text(encoding="utf-8"))
-    payload = _rebase_paths(payload, staged_output, final_output)
-    payload["inputs"]["workflow"] = WORKFLOW_NAME
-    payload["artifacts"].append(
-        {
-            "kind": "docx_report",
-            "name": Path(report_filename).stem,
-            "profile": WORKFLOW_NAME,
-            "schema_version": 1,
-            "path": str(final_output / "report" / report_filename),
-        }
-    )
-    payload["runtime"]["workflow_steps"].append("docx_report")
-    payload["runtime"]["executed_steps"].append("docx_report")
-    path.write_text(
-        json.dumps(payload, ensure_ascii=False, indent=2),
-        encoding="utf-8",
-    )
-
-
 def _year(payload: dict[str, Any], key: str) -> int:
     value = payload.get(key)
     if not isinstance(value, int) or isinstance(value, bool):
         raise ValueError(f"{key} must be an integer")
     return value
-
-
-def _existing_file(base: Path, payload: dict[str, Any], key: str) -> Path:
-    path = _path(base, payload, key)
-    if not path.is_file():
-        raise ValueError(f"{key} does not exist: {path}")
-    return path

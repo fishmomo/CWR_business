@@ -695,9 +695,9 @@ bundled Poppler into 11 page images. Every page passed visual inspection after
 removing a retained empty task marker, keeping figure 6 with its caption, and
 tightening reference spacing to prevent a one-line trailing page.
 
-## Next planned stage: cloud-water shared-kernel consolidation
+## Completed stage: cloud-water shared-kernel consolidation
 
-Status: planned, not active.
+Status: completed on 2026-08-11.
 
 ### Outcome
 
@@ -706,9 +706,58 @@ derivation, and shared report helpers used by both cloud-water workflows behind
 stable public modules. Remove cross-profile imports of private single-year
 helpers without changing accepted single-year or multi-year outputs.
 
+### Included
+
+- Add one public annual derivation result used by both single-year and
+  multi-year metric builders.
+- Reuse the first validated grid and compiled mask across all selected years.
+- Centralize product/region configuration normalization and transactional
+  workflow publication.
+- Let shared figure renderers consume single-year fields or multi-year mapped
+  fields directly without temporary alias datasets.
+- Route cross-profile report helpers through one public profile module.
+
+### Excluded
+
+- New formulas, statistics, figures, templates, or output formats.
+- Changes to accepted JSON, NetCDF, image-slot, and DOCX contracts.
+- Visual restyling or another figure-review pass.
+- GUI, Web UI, scheduling, retries, cache execution, or distributed workflows.
+
+### Acceptance
+
+- The multi-year builder invokes the shared annual core once per selected year.
+- Single-year and multi-year synthetic formula and failure tests pass.
+- Real metrics, spatial products, and PNG figures remain equivalent.
+- Both real reports regenerate without unresolved placeholders.
+- The full test suite passes in `cwr_py312`.
+
 ### Stop condition
 
 The stage ends when both workflows use the shared public APIs, their real
 acceptance outputs remain equivalent, the full suite passes, and the refactor
 is committed. New formulas, figures, templates, and report types remain outside
 this stage.
+
+The acceptance checks pass. Single-year and multi-year calculations now share
+the same annual derivation result for product discovery, grid validation, mask
+use, annual/monthly records, seasonal summaries, source indexing, and yearly
+spatial fields. Multi-year processing retains only cross-year averaging,
+extrema, trend, significance, and semantic spatial aggregation. Shared config,
+workflow publication, figure-input mapping, and report-helper modules remove
+the previous direct private-helper dependencies. Synthetic coverage verifies
+one shared-core call per year. The real acceptance run keeps both spatial
+NetCDF files and all eleven PNGs byte-identical, while both DOCX reports pass
+structural checks after regeneration. The full suite passes with 72 tests in
+`cwr_py312`.
+
+## Next planned stage: unified business request entrypoint
+
+Status: planned, not active.
+
+### Outcome
+
+Define one user-facing request contract for data source, mandatory region,
+year/month/day period selection, requested physical variables, regional or
+gridded results, and CSV/NetCDF/figure outputs. Existing report workflows remain
+thin optional products above that request contract.

@@ -15,6 +15,12 @@ from cwr_engine.business_metrics.cloud_water_figures import (
     IMAGE_SLOTS,
     render_cloud_water_figures,
 )
+from cwr_engine.business_metrics.cloud_water_config import (
+    normalize_product_source,
+    normalize_region_spec,
+    required_text,
+    resolve_path,
+)
 from cwr_engine.steps.mask import compile_shp_mask
 
 
@@ -43,6 +49,18 @@ ANNUAL_VARIABLES = [
     "RCh",
     "dxy",
 ]
+ANNUAL_METRIC_NAMES = [*ANNUAL_VARIABLES, "MC", "CEv"]
+MONTHLY_METRIC_NAMES = [
+    "GMv",
+    "GMh",
+    "MC",
+    "CWR",
+    "SP",
+    "CEv",
+    "PEh",
+    "RCh",
+]
+SEASON_ORDER = list(SEASON_MONTHS)
 BOUNDARY_COMPONENTS = {
     "water_vapor": ("INv", "OTv"),
     "hydrometeor": ("INh", "OTh"),
@@ -188,15 +206,15 @@ def load_cloud_water_metrics_spec(path: Path) -> CloudWaterMetricsSpec:
             "Retained CSV/spatial metric inputs are no longer supported; "
             "use product_source and region_spec"
         )
-    product_source = _product_source(base, payload.get("product_source"))
-    region_spec = _region_spec(base, payload.get("region_spec"))
+    product_source = normalize_product_source(base, payload.get("product_source"))
+    region_spec = normalize_region_spec(base, payload.get("region_spec"))
     return CloudWaterMetricsSpec(
-        task_id=_required_text(payload, "task_id"),
+        task_id=required_text(payload, "task_id"),
         year=year,
-        region_name=_required_text(payload, "region_name"),
+        region_name=required_text(payload, "region_name"),
         product_source=product_source,
         region_spec=region_spec,
-        output_root=_path(base, payload, "output_root"),
+        output_root=resolve_path(base, payload, "output_root"),
         artifact_name=artifact_name,
     )
 
@@ -204,53 +222,17 @@ def load_cloud_water_metrics_spec(path: Path) -> CloudWaterMetricsSpec:
 def derive_cloud_water_business_metrics(
     spec: CloudWaterMetricsSpec,
 ) -> tuple[dict[str, Any], xr.Dataset]:
-    annual, months, spatial = _derive_direct_product_inputs(spec)
-    input_mode = "product_catalog"
-    dxy = _number(annual, "dxy")
-    if np.isclose(dxy, 0):
-        raise ValueError("annual dxy must not be zero")
+    from cwr_engine.business_metrics.cloud_water_core import (
+        derive_cloud_water_year,
+    )
 
-    monthly = []
-    for month in range(1, 13):
-        source = months[month]
-        row = {
-            "month": month,
-            "SP": _number(source, "SP"),
-            "CWR": _number(source, "CWR"),
-            "dxy": _number(source, "dxy"),
-            "SP_mm": _number(source, "SP") / dxy,
-            "CWR_mm": _number(source, "CWR") / dxy,
-        }
-        optional = ("GMv", "GMh", "MC", "CEv", "RCh", "PEh")
-        if all(name in source for name in optional):
-            row.update(
-                {
-                    name: _number(source, name)
-                    for name in optional
-                }
-            )
-            row.update(
-                {
-                    "GMv_mm": row["GMv"] / dxy,
-                    "GMh_mm": row["GMh"] / dxy,
-                    "MC_mm": row["MC"] / dxy,
-                }
-            )
-        monthly.append(row)
-    seasons = {
-        season: {
-            "months": season_months,
-            "SP_mm": sum(monthly[month - 1]["SP_mm"] for month in season_months),
-            "CWR_mm": sum(
-                monthly[month - 1]["CWR_mm"] for month in season_months
-            ),
-        }
-        for season, season_months in SEASON_MONTHS.items()
-    }
-    boundaries = {
-        name: _boundary_metrics(annual, incoming, outgoing)
-        for name, (incoming, outgoing) in BOUNDARY_COMPONENTS.items()
-    }
+    result = derive_cloud_water_year(
+        spec.product_source,
+        spec.region_spec,
+        spec.year,
+    )
+    input_mode = "product_catalog"
+    annual = result.annual_record
     metrics = {
         "schema_version": 1,
         "kind": "business_metrics",
@@ -267,71 +249,50 @@ def derive_cloud_water_business_metrics(
         },
         "annual": {
             "values": {
-                name: _number(annual, name) for name in ANNUAL_VARIABLES
+                name: annual["values"][name] for name in ANNUAL_VARIABLES
             },
             "equivalent_depth_mm": {
-                name: _number(annual, name) / dxy
+                name: annual["equivalent_depth_mm"][name]
                 for name in ("GMv", "GMh", "SP", "CWR")
             },
         },
-        "monthly": monthly,
-        "seasons": seasons,
-        "boundaries": boundaries,
+        "monthly": [
+            _single_year_monthly_record(result.monthly_records[month])
+            for month in range(1, 13)
+        ],
+        "seasons": result.seasons,
+        "boundaries": annual["boundaries"],
         "spatial_composite": {
             "artifact_name": spec.artifact_name,
             "mask_variable": "ind_area_bool",
             "variables": SPATIAL_VARIABLES,
         },
     }
-    return metrics, spatial
+    return metrics, result.spatial
 
 
-def _derive_direct_product_inputs(
-    spec: CloudWaterMetricsSpec,
-) -> tuple[dict[str, float | str], dict[int, dict[str, float | str]], xr.Dataset]:
-    annual_path, monthly_paths = _discover_direct_product_files(
-        spec.product_source,
-        spec.year,
+def _single_year_monthly_record(record: dict[str, Any]) -> dict[str, Any]:
+    row = {
+        "month": record["month"],
+        "SP": record["SP"],
+        "CWR": record["CWR"],
+        "dxy": record["dxy"],
+        "SP_mm": record["SP_mm"],
+        "CWR_mm": record["CWR_mm"],
+    }
+    row.update(
+        {
+            name: record[name]
+            for name in ("GMv", "GMh", "MC", "CEv", "RCh", "PEh")
+        }
     )
-    annual_dataset = _load_direct_product(
-        annual_path,
-        spec.product_source,
-        DIRECT_ANNUAL_SOURCE_VARIABLES,
+    row.update(
+        {
+            name: record[name]
+            for name in ("GMv_mm", "GMh_mm", "MC_mm")
+        }
     )
-    mask = _compile_direct_mask(
-        spec.region_spec,
-        annual_dataset["lat"].values,
-        annual_dataset["lon"].values,
-    )
-    annual = _aggregate_direct_product(
-        annual_dataset,
-        mask,
-        spec.year,
-        month=None,
-    )
-
-    monthly_datasets: dict[int, xr.Dataset] = {}
-    months: dict[int, dict[str, float | str]] = {}
-    for month, product_path in monthly_paths.items():
-        dataset = _load_direct_product(
-            product_path,
-            spec.product_source,
-            DIRECT_MONTHLY_SOURCE_VARIABLES,
-        )
-        _validate_product_grid(annual_dataset, dataset)
-        monthly_datasets[month] = dataset
-        months[month] = _aggregate_direct_product(
-            dataset,
-            mask,
-            spec.year,
-            month=month,
-        )
-    spatial = _direct_spatial_composite(
-        annual_dataset,
-        monthly_datasets,
-        mask,
-    )
-    return annual, months, spatial
+    return row
 
 
 def _discover_direct_product_files(
@@ -836,67 +797,3 @@ def _number(row: dict[str, str], key: str) -> float:
     if not math.isfinite(value):
         raise ValueError(f"Non-finite numeric value for {key}")
     return value
-
-
-def _required_text(payload: dict[str, Any], key: str) -> str:
-    value = payload.get(key)
-    if not isinstance(value, str) or not value.strip():
-        raise ValueError(f"{key} must be a non-empty string")
-    return value
-
-
-def _path(base: Path, payload: dict[str, Any], key: str) -> Path:
-    value = payload.get(key)
-    if not isinstance(value, str) or not value.strip():
-        raise ValueError(f"{key} must be a non-empty path")
-    path = Path(value)
-    return path if path.is_absolute() else (base / path).resolve()
-
-
-def _product_source(base: Path, value: Any) -> dict[str, Any]:
-    if not isinstance(value, dict):
-        raise ValueError("product_source must be an object")
-    raw_root = value.get("root")
-    if not isinstance(raw_root, str) or not raw_root.strip():
-        raise ValueError("product_source.root must be a non-empty path")
-    root = Path(raw_root)
-    root = root if root.is_absolute() else (base / root).resolve()
-    if not root.is_dir():
-        raise ValueError(f"product_source.root does not exist: {root}")
-    source = {**value, "root": root}
-    for key in ("coordinate_map", "variable_map"):
-        if key in source and not isinstance(source[key], dict):
-            raise ValueError(f"product_source.{key} must be an object")
-    for key in ("annual_pattern", "monthly_pattern", "engine"):
-        if key in source and (
-            not isinstance(source[key], str) or not source[key].strip()
-        ):
-            raise ValueError(f"product_source.{key} must be a non-empty string")
-    return source
-
-
-def _region_spec(base: Path, value: Any) -> dict[str, Any]:
-    if not isinstance(value, dict):
-        raise ValueError("region_spec must be an object")
-    kind = value.get("kind")
-    payload = value.get("payload")
-    if kind not in {"shp", "existing_mask", "bbox"}:
-        raise ValueError("region_spec.kind must be shp, existing_mask, or bbox")
-    if not isinstance(payload, dict):
-        raise ValueError("region_spec.payload must be an object")
-    resolved_payload = dict(payload)
-    if kind in {"shp", "existing_mask"}:
-        raw_path = payload.get("path")
-        if not isinstance(raw_path, str) or not raw_path.strip():
-            raise ValueError("region_spec.payload.path must be a non-empty path")
-        path = Path(raw_path)
-        path = path if path.is_absolute() else (base / path).resolve()
-        if not path.is_file():
-            raise ValueError(f"region_spec path does not exist: {path}")
-        resolved_payload["path"] = str(path)
-    else:
-        required = {"min_lon", "max_lon", "min_lat", "max_lat"}
-        if not required <= set(payload):
-            missing = sorted(required - set(payload))
-            raise ValueError(f"bbox region_spec is missing {missing[0]}")
-    return {"kind": kind, "payload": resolved_payload}

@@ -5,6 +5,7 @@ import numpy as np
 import pytest
 import xarray as xr
 
+from cwr_engine.business_metrics import cloud_water_multi_year as multi_year
 from cwr_engine.business_metrics.cloud_water_multi_year import (
     _extrema,
     _trend,
@@ -119,14 +120,24 @@ def _write_spec(tmp_path: Path, root: Path, mask_path: Path) -> Path:
 
 def test_multi_year_metrics_use_equal_year_means_and_complete_catalog(
     tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
 ):
     root, mask_path = _write_products(tmp_path)
     spec = load_cloud_water_multi_year_metrics_spec(
         _write_spec(tmp_path, root, mask_path)
     )
+    derived_years = []
+    original = multi_year.derive_cloud_water_year
+
+    def trace_year(*args, **kwargs):
+        derived_years.append(args[2])
+        return original(*args, **kwargs)
+
+    monkeypatch.setattr(multi_year, "derive_cloud_water_year", trace_year)
 
     metrics, spatial = derive_cloud_water_multi_year_business_metrics(spec)
 
+    assert derived_years == list(range(2021, 2026))
     assert metrics["year_count"] == 5
     assert metrics["source"]["annual_product_count"] == 5
     assert metrics["source"]["monthly_product_count"] == 60

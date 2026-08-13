@@ -214,21 +214,17 @@ def _render_annual_maps(
     mask: np.ndarray,
     geometry,
     target: Path,
+    *,
+    variables: list[str] | None = None,
 ) -> None:
-    panels = [
-        ("pic3_a", "mm"),
-        ("pic3_b", "%"),
-        ("pic3_c", "mm"),
-        ("pic3_d", "mm"),
-        ("pic3_e", "mm"),
-        ("pic3_f", "%"),
-    ]
-    missing = [name for name, _ in panels if name not in spatial]
-    if missing:
-        raise ValueError(f"Annual figure is missing spatial field {missing[0]}")
+    field_names = variables or [f"pic3_{suffix}" for suffix in "abcdef"]
+    if len(field_names) != 6:
+        raise ValueError("Annual figure requires six spatial fields")
+    panels = list(zip(field_names, ["mm", "%", "mm", "mm", "mm", "%"]))
+    fields = [_resolve_spatial_field(spatial, name) for name, _ in panels]
     fig, axes = plt.subplots(3, 2, figsize=(11.0, 7.4))
     try:
-        for index, (name, display_label) in enumerate(panels):
+        for index, ((_, unit), field) in enumerate(zip(panels, fields)):
             row, column = divmod(index, 2)
             _draw_map_panel(
                 fig,
@@ -236,9 +232,9 @@ def _render_annual_maps(
                 spatial,
                 mask,
                 geometry,
-                name,
+                field,
                 f"({chr(ord('a') + index)})",
-                display_label,
+                unit,
                 show_x_labels=row == 2,
                 show_y_labels=column == 0,
             )
@@ -252,19 +248,15 @@ def _render_season_maps(
     spatial: xr.Dataset,
     mask: np.ndarray,
     geometry,
-    variables: list[str],
+    variables: list[str | xr.DataArray],
     colorbar_label: str,
     target: Path,
     *,
     zero_based: bool,
 ) -> None:
-    missing = [name for name in variables if name not in spatial]
-    if missing:
-        raise ValueError(
-            f"Seasonal figure is missing spatial field {missing[0]}"
-        )
+    fields = [_resolve_spatial_field(spatial, variable) for variable in variables]
     values = np.concatenate(
-        [spatial[name].values[mask].astype(float) for name in variables]
+        [field.values[mask].astype(float) for field in fields]
     )
     levels = _tidy_colorbar_levels(values, zero_based=zero_based)
     fig = plt.figure(figsize=(10.8, 5.8))
@@ -283,7 +275,7 @@ def _render_season_maps(
     colorbar_axis = fig.add_subplot(grid[:, 2])
     try:
         contour = None
-        for index, name in enumerate(variables):
+        for index, field in enumerate(fields):
             row, column = divmod(index, 2)
             contour = _draw_map_panel(
                 fig,
@@ -291,7 +283,7 @@ def _render_season_maps(
                 spatial,
                 mask,
                 geometry,
-                name,
+                field,
                 f"({chr(ord('a') + index)})",
                 None,
                 levels=levels,
@@ -323,7 +315,7 @@ def _draw_map_panel(
     spatial: xr.Dataset,
     mask: np.ndarray,
     geometry,
-    variable: str,
+    variable: str | xr.DataArray,
     panel_label: str,
     colorbar_label: str | None,
     *,
@@ -333,10 +325,12 @@ def _draw_map_panel(
 ):
     lon = spatial["lon"].values
     lat = spatial["lat"].values
-    source_data = spatial[variable].values.astype(float)
+    field = _resolve_spatial_field(spatial, variable)
+    field_name = field.name or "unnamed"
+    source_data = field.values.astype(float)
     valid = source_data[mask]
     if not np.all(np.isfinite(valid)):
-        raise ValueError(f"Spatial figure field {variable} is non-finite")
+        raise ValueError(f"Spatial figure field {field_name} is non-finite")
     data = (
         source_data
         if geometry is not None
@@ -400,6 +394,23 @@ def _draw_map_panel(
         colorbar.update_ticks()
         _style_colorbar(colorbar, colorbar_label)
     return contour
+
+
+def _resolve_spatial_field(
+    spatial: xr.Dataset,
+    variable: str | xr.DataArray,
+) -> xr.DataArray:
+    if isinstance(variable, xr.DataArray):
+        field = variable
+    else:
+        if variable not in spatial:
+            raise ValueError(f"Figure is missing spatial field {variable}")
+        field = spatial[variable]
+    if field.dims != ("lat", "lon"):
+        raise ValueError(
+            f"Spatial figure field {field.name or 'unnamed'} must use lat/lon"
+        )
+    return field
 
 
 def _colorbar_ticks(

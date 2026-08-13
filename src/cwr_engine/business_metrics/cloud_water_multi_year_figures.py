@@ -49,28 +49,40 @@ def render_cloud_water_multi_year_figures(
         metrics["annual_series"],
         targets["target_image3"],
     )
-    annual = _annual_map_aliases(spatial)
     _render_annual_maps(
-        annual,
+        spatial,
         mask,
         geometry,
         targets["target_image4"],
+        variables=[
+            "annual_mean_gmv_mm",
+            "annual_mean_cev_percent",
+            "annual_mean_cwr_mm",
+            "annual_mean_gmh_mm",
+            "annual_mean_sp_mm",
+            "annual_mean_peh_percent",
+        ],
     )
-    seasonal = _season_map_aliases(spatial)
     _render_season_maps(
-        seasonal,
+        spatial,
         mask,
         geometry,
-        [f"pic4_{suffix}" for suffix in "abcd"],
+        [
+            spatial["seasonal_mean_sp_mm"].sel(season=season, drop=True)
+            for season in ["spring", "summer", "autumn", "winter"]
+        ],
         "mm",
         targets["target_image5"],
         zero_based=True,
     )
     _render_season_maps(
-        seasonal,
+        spatial,
         mask,
         geometry,
-        [f"pic5_{suffix}" for suffix in "abcd"],
+        [
+            spatial["seasonal_mean_cwr_mm"].sel(season=season, drop=True)
+            for season in ["spring", "summer", "autumn", "winter"]
+        ],
         "mm",
         targets["target_image6"],
         zero_based=False,
@@ -177,36 +189,3 @@ def _pad_axis(ax, values: np.ndarray) -> None:
     spread = upper - lower
     padding = spread * 0.2 if spread else max(abs(upper) * 0.05, 1.0)
     ax.set_ylim(lower - padding, upper + padding)
-
-
-def _annual_map_aliases(spatial: xr.Dataset) -> xr.Dataset:
-    names = {
-        "pic3_a": "annual_mean_gmv_mm",
-        "pic3_b": "annual_mean_cev_percent",
-        "pic3_c": "annual_mean_cwr_mm",
-        "pic3_d": "annual_mean_gmh_mm",
-        "pic3_e": "annual_mean_sp_mm",
-        "pic3_f": "annual_mean_peh_percent",
-    }
-    return xr.Dataset(
-        {alias: spatial[source] for alias, source in names.items()},
-        coords={"lat": spatial["lat"], "lon": spatial["lon"]},
-    )
-
-
-def _season_map_aliases(spatial: xr.Dataset) -> xr.Dataset:
-    values = {}
-    for index, season in enumerate(["spring", "summer", "autumn", "winter"]):
-        suffix = chr(ord("a") + index)
-        values[f"pic4_{suffix}"] = spatial["seasonal_mean_sp_mm"].sel(
-            season=season,
-            drop=True,
-        )
-        values[f"pic5_{suffix}"] = spatial["seasonal_mean_cwr_mm"].sel(
-            season=season,
-            drop=True,
-        )
-    return xr.Dataset(
-        values,
-        coords={"lat": spatial["lat"], "lon": spatial["lon"]},
-    )

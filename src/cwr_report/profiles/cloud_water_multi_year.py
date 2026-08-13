@@ -15,13 +15,13 @@ from cwr_engine.business_metrics.cloud_water_multi_year_figures import (
     IMAGE_SLOTS,
 )
 from cwr_report.assembler import build_report
-from cwr_report.profiles.cloud_water_single_year import (
-    _derive_boundary_tables,
-    _derive_scalar_text,
-    _image_width_overrides,
-    _seasonal_spatial_text,
-    _spatial_description,
-    _template_slots,
+from cwr_report.profiles.cloud_water_shared import (
+    derive_boundary_tables,
+    derive_scalar_text,
+    image_width_overrides,
+    seasonal_spatial_text,
+    spatial_description,
+    template_slots,
 )
 
 
@@ -133,7 +133,7 @@ def load_cloud_water_multi_year_profile_spec(
         or width <= 0
     ):
         raise ValueError("image_width_inches must be positive")
-    width_overrides = _image_width_overrides(
+    width_overrides = image_width_overrides(
         payload.get("image_widths_inches", {}),
         IMAGE_SLOTS,
     )
@@ -161,7 +161,7 @@ def derive_cloud_water_multi_year_profile_data(
     months = {
         int(row["month"]): row for row in metrics["monthly_climatology"]
     }
-    common = _derive_scalar_text(
+    common = derive_scalar_text(
         SimpleNamespace(year=spec.end_year, region_name=spec.region_name),
         annual,
         months,
@@ -183,8 +183,8 @@ def derive_cloud_water_multi_year_profile_data(
     values.update(_monthly_tie_text(metrics))
     values.update(_interannual_text(metrics))
     values.update(_spatial_text(spec.spatial_nc))
-    vapor_table, hydrometeor_table = _derive_boundary_tables(annual)
-    required = _template_slots(spec.template) - set(IMAGE_SLOTS) - {
+    vapor_table, hydrometeor_table = derive_boundary_tables(annual)
+    required = template_slots(spec.template) - set(IMAGE_SLOTS) - {
         "table_for_TFdatav",
         "table_for_TFdatah",
     }
@@ -332,7 +332,7 @@ def _spatial_text(path: Path) -> dict[str, str]:
         "pic4_f": "annual_mean_peh_percent",
     }
     result = {
-        slot: _spatial_description(dataset, variable, mask)
+        slot: spatial_description(dataset, variable, mask)
         for slot, variable in annual.items()
     }
     seasonal = xr.Dataset(
@@ -353,7 +353,7 @@ def _spatial_text(path: Path) -> dict[str, str]:
         coords={"lat": dataset["lat"], "lon": dataset["lon"]},
     )
     result.update(
-        _seasonal_spatial_text(
+        seasonal_spatial_text(
             seasonal,
             mask,
             [f"pic5_{suffix}" for suffix in "abcd"],
@@ -361,7 +361,7 @@ def _spatial_text(path: Path) -> dict[str, str]:
         )
     )
     result.update(
-        _seasonal_spatial_text(
+        seasonal_spatial_text(
             seasonal,
             mask,
             [f"pic6_{suffix}" for suffix in "abcd"],
@@ -376,12 +376,12 @@ def _generic_report_spec(
     data: CloudWaterMultiYearProfileData,
     report_inputs: Path,
 ) -> dict[str, Any]:
-    template_slots = _template_slots(spec.template)
+    template_slot_names = template_slots(spec.template)
     block_slots = set(IMAGE_SLOTS) | {
         "table_for_TFdatav",
         "table_for_TFdatah",
     }
-    text_slots = template_slots - block_slots
+    text_slots = template_slot_names - block_slots
     columns = [
         {"field": "边界名称", "title": "边界名称"},
         {"field": "输入", "title": "输入"},

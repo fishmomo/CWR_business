@@ -2,7 +2,6 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 import json
-import math
 from pathlib import Path
 import tempfile
 from typing import Any
@@ -12,23 +11,17 @@ from scipy.stats import kendalltau, theilslopes
 import xarray as xr
 
 from cwr_engine.business_metrics.cloud_water import (
-    ANNUAL_VARIABLES,
     BOUNDARY_COMPONENTS,
-    DIRECT_ANNUAL_SOURCE_VARIABLES,
-    DIRECT_MONTHLY_SOURCE_VARIABLES,
     SEASON_MONTHS,
-    _aggregate_direct_product,
-    _boundary_metrics,
-    _compile_direct_mask,
-    _direct_spatial_composite,
-    _discover_direct_product_files,
-    _load_direct_product,
-    _path,
-    _product_source,
-    _region_spec,
-    _required_text,
-    _validate_product_grid,
+    SEASON_ORDER,
 )
+from cwr_engine.business_metrics.cloud_water_config import (
+    normalize_product_source,
+    normalize_region_spec,
+    required_text,
+    resolve_path,
+)
+from cwr_engine.business_metrics.cloud_water_core import derive_cloud_water_year
 from cwr_engine.business_metrics.cloud_water_multi_year_figures import (
     IMAGE_SLOTS,
     render_cloud_water_multi_year_figures,
@@ -36,18 +29,6 @@ from cwr_engine.business_metrics.cloud_water_multi_year_figures import (
 
 
 PROFILE_NAME = "cloud_water_multi_year"
-ANNUAL_METRIC_NAMES = [*ANNUAL_VARIABLES, "MC", "CEv"]
-MONTHLY_METRIC_NAMES = [
-    "GMv",
-    "GMh",
-    "MC",
-    "CWR",
-    "SP",
-    "CEv",
-    "PEh",
-    "RCh",
-]
-SEASON_ORDER = ["spring", "summer", "autumn", "winter"]
 
 
 @dataclass(frozen=True)
@@ -131,13 +112,16 @@ def load_cloud_water_multi_year_metrics_spec(
     ):
         raise ValueError("artifact_name must be a non-empty filename stem")
     return CloudWaterMultiYearMetricsSpec(
-        task_id=_required_text(payload, "task_id"),
+        task_id=required_text(payload, "task_id"),
         start_year=start_year,
         end_year=end_year,
-        region_name=_required_text(payload, "region_name"),
-        product_source=_product_source(base, payload.get("product_source")),
-        region_spec=_region_spec(base, payload.get("region_spec")),
-        output_root=_path(base, payload, "output_root"),
+        region_name=required_text(payload, "region_name"),
+        product_source=normalize_product_source(
+            base,
+            payload.get("product_source"),
+        ),
+        region_spec=normalize_region_spec(base, payload.get("region_spec")),
+        output_root=resolve_path(base, payload, "output_root"),
         artifact_name=artifact_name,
     )
 
@@ -146,74 +130,40 @@ def derive_cloud_water_multi_year_business_metrics(
     spec: CloudWaterMultiYearMetricsSpec,
 ) -> tuple[dict[str, Any], xr.Dataset]:
     years = list(range(spec.start_year, spec.end_year + 1))
-    discovered = {
-        year: _discover_direct_product_files(spec.product_source, year)
-        for year in years
-    }
-    first_annual = _load_direct_product(
-        discovered[years[0]][0],
-        spec.product_source,
-        DIRECT_ANNUAL_SOURCE_VARIABLES,
-    )
-    mask = _compile_direct_mask(
-        spec.region_spec,
-        first_annual["lat"].values,
-        first_annual["lon"].values,
-    )
-    if not bool(mask.any().item()):
-        raise ValueError("Compiled multi-year mask contains no grid cells")
-
     annual_series: list[dict[str, Any]] = []
     monthly_by_year: dict[int, dict[int, dict[str, Any]]] = {}
     spatial_by_year: list[xr.Dataset] = []
     annual_sources: list[str] = []
     monthly_sources: list[str] = []
+    reference_grid: xr.Dataset | None = None
+    mask: xr.DataArray | None = None
     for year in years:
-        annual_path, monthly_paths = discovered[year]
-        annual_dataset = (
-            first_annual
-            if year == years[0]
-            else _load_direct_product(
-                annual_path,
-                spec.product_source,
-                DIRECT_ANNUAL_SOURCE_VARIABLES,
-            )
-        )
-        _validate_product_grid(first_annual, annual_dataset)
-        annual_raw = _aggregate_direct_product(
-            annual_dataset,
-            mask,
+        result = derive_cloud_water_year(
+            spec.product_source,
+            spec.region_spec,
             year,
-            month=None,
+            reference_grid=reference_grid,
+            mask=mask,
         )
-        annual_series.append(_annual_record(year, annual_raw))
-        annual_sources.append(str(annual_path))
+        reference_grid = result.reference_grid
+        mask = result.mask
+        annual_series.append(result.annual_record)
+        monthly_by_year[year] = {
+            month: {
+                key: value
+                for key, value in record.items()
+                if key != "dxy"
+            }
+            for month, record in result.monthly_records.items()
+        }
+        spatial_by_year.append(result.spatial)
+        annual_sources.append(str(result.annual_product))
+        monthly_sources.extend(
+            str(result.monthly_products[month]) for month in range(1, 13)
+        )
 
-        month_datasets: dict[int, xr.Dataset] = {}
-        month_records: dict[int, dict[str, Any]] = {}
-        for month, month_path in monthly_paths.items():
-            dataset = _load_direct_product(
-                month_path,
-                spec.product_source,
-                DIRECT_MONTHLY_SOURCE_VARIABLES,
-            )
-            _validate_product_grid(first_annual, dataset)
-            month_datasets[month] = dataset
-            month_records[month] = _monthly_record(
-                month,
-                _aggregate_direct_product(
-                    dataset,
-                    mask,
-                    year,
-                    month=month,
-                ),
-                annual_raw["dxy"],
-            )
-            monthly_sources.append(str(month_path))
-        monthly_by_year[year] = month_records
-        spatial_by_year.append(
-            _direct_spatial_composite(annual_dataset, month_datasets, mask)
-        )
+    if mask is None:
+        raise ValueError("Multi-year derivation produced no region mask")
 
     _validate_dxy(annual_series)
     monthly_climatology = _monthly_climatology(years, monthly_by_year)
@@ -262,50 +212,6 @@ def derive_cloud_water_multi_year_business_metrics(
         },
     }
     return metrics, spatial
-
-
-def _annual_record(year: int, source: dict[str, Any]) -> dict[str, Any]:
-    dxy = _finite_number(source["dxy"], "dxy")
-    if np.isclose(dxy, 0):
-        raise ValueError(f"Annual dxy must not be zero for {year}")
-    values = {
-        name: _finite_number(source[name], name)
-        for name in ANNUAL_METRIC_NAMES
-    }
-    boundaries = {
-        name: _boundary_metrics(source, incoming, outgoing)
-        for name, (incoming, outgoing) in BOUNDARY_COMPONENTS.items()
-    }
-    return {
-        "year": year,
-        "values": values,
-        "equivalent_depth_mm": {
-            name: values[name] / dxy
-            for name in ("GMv", "GMh", "SP", "CWR", "MC")
-        },
-        "boundaries": boundaries,
-    }
-
-
-def _monthly_record(
-    month: int,
-    source: dict[str, Any],
-    annual_dxy: Any,
-) -> dict[str, Any]:
-    dxy = _finite_number(annual_dxy, "annual dxy")
-    values = {
-        name: _finite_number(source[name], name)
-        for name in MONTHLY_METRIC_NAMES
-    }
-    return {
-        "month": month,
-        **values,
-        "GMv_mm": values["GMv"] / dxy,
-        "GMh_mm": values["GMh"] / dxy,
-        "MC_mm": values["MC"] / dxy,
-        "CWR_mm": values["CWR"] / dxy,
-        "SP_mm": values["SP"] / dxy,
-    }
 
 
 def _multi_year_mean(records: list[dict[str, Any]]) -> dict[str, Any]:
@@ -632,13 +538,3 @@ def _mean(values: list[Any]) -> float:
     if not np.all(np.isfinite(array)):
         raise ValueError("Multi-year mean contains non-finite values")
     return float(array.mean())
-
-
-def _finite_number(value: Any, name: str) -> float:
-    try:
-        number = float(value)
-    except (TypeError, ValueError) as error:
-        raise ValueError(f"Invalid numeric value for {name}") from error
-    if not math.isfinite(number):
-        raise ValueError(f"Non-finite numeric value for {name}")
-    return number
