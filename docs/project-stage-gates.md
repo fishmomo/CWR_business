@@ -816,7 +816,7 @@ plot type or formal report layout.
 
 ## Next planned stage: upper-layer product request integration
 
-Status: planned, not active.
+Status: implementation design frozen; external implementation not active.
 
 Implementation owner: external contractor. Codex acts only as the temporary
 supervisor and reviewer unless the user explicitly reassigns implementation.
@@ -824,6 +824,8 @@ supervisor and reviewer unless the user explicitly reassigns implementation.
 Detailed outsourcing scope, checkpoints, required evidence, and supervisor
 feedback format are defined in
 `docs/outsourcing/upper-layer-product-request-integration.md`.
+The binding implementation design is
+`docs/outsourcing/checkpoint-1-final-implementation-design.md`.
 
 ### Outcome
 
