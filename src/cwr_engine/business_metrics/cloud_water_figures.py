@@ -238,7 +238,7 @@ def _render_annual_maps(
                 show_x_labels=row == 2,
                 show_y_labels=column == 0,
             )
-        fig.subplots_adjust(hspace=0.48, wspace=0.62)
+        fig.subplots_adjust(hspace=0.48, wspace=0.35)
         _save(fig, target, dpi=180)
     finally:
         plt.close(fig)
@@ -320,6 +320,10 @@ def _draw_map_panel(
     colorbar_label: str | None,
     *,
     levels: np.ndarray | None = None,
+    extend: str = "neither",
+    colorbar_tick_labelsize: float = 16,
+    colorbar_labelsize: float = 16,
+    colorbar_max_ticks: int = 5,
     show_x_labels: bool = True,
     show_y_labels: bool = True,
 ):
@@ -347,6 +351,7 @@ def _draw_map_panel(
         data,
         levels=panel_levels,
         cmap=MAP_COLORMAP,
+        extend=extend,
     )
     if geometry is not None:
         _clip_contour_to_geometry(ax, contour, geometry)
@@ -388,11 +393,16 @@ def _draw_map_panel(
             ax=ax,
             fraction=0.055,
             pad=0.035,
-            ticks=_colorbar_ticks(panel_levels, max_ticks=3),
+            ticks=_colorbar_ticks(panel_levels, max_ticks=colorbar_max_ticks),
             format=FuncFormatter(_tidy_colorbar_label),
         )
         colorbar.update_ticks()
-        _style_colorbar(colorbar, colorbar_label)
+        _style_colorbar(
+            colorbar,
+            colorbar_label,
+            tick_labelsize=colorbar_tick_labelsize,
+            labelsize=colorbar_labelsize,
+        )
     return contour
 
 
@@ -429,9 +439,15 @@ def _colorbar_ticks(
     return levels[np.unique(indices)]
 
 
-def _style_colorbar(colorbar, label: str) -> None:
-    colorbar.ax.tick_params(labelsize=23)
-    colorbar.ax.set_title(label, fontsize=23, pad=12)
+def _style_colorbar(
+    colorbar,
+    label: str,
+    *,
+    tick_labelsize: float = 16,
+    labelsize: float = 16,
+) -> None:
+    colorbar.ax.tick_params(labelsize=tick_labelsize)
+    colorbar.ax.set_title(label, fontsize=labelsize, pad=12)
 
 
 def _levels(values: np.ndarray, *, zero_based: bool = False) -> np.ndarray:

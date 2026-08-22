@@ -371,13 +371,15 @@ def test_annual_map_panel_uses_tidy_colorbar_ticks():
         ]
         assert labels == [
             "200.0",
+            "400.0",
             "600.0",
+            "700.0",
             "900.0",
         ]
         assert ax.texts[0].get_text() == "Field"
         assert fig.axes[-1].get_title() == "mm"
         assert all(
-            label.get_fontsize() >= 23
+            label.get_fontsize() >= 16
             for label in fig.axes[-1].get_yticklabels()
         )
     finally:

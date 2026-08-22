@@ -103,3 +103,12 @@ Each reviewed figure records:
 4. Affected report profiles and artifact paths.
 5. Visual acceptance result at final output size.
 6. Whether the change applies only to this figure or updates the default rule.
+
+- Review date: 2026-08-20.
+- Scope: all newly generated annual six-variable spatial-distribution figures.
+- Approved layout: the two map columns use a compact 0.35 horizontal spacing.
+  Each colorbar remains attached to its own panel.
+- Approved colorbar typography: the unit title and tick labels use 16-pt source
+  text.  Each independent colorbar shows up to five tick labels.
+- Color-scale exceptions: individual reports may set fixed ranges and `extend`
+  behavior for a particular variable without changing this layout standard.
