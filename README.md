@@ -1,9 +1,8 @@
-# CWR Engine
+# CWR 通用计算引擎
 
-## Runtime
+## 运行环境
 
-All development, tests, and agent work use the Conda environment `cwr_py312`
-(Python 3.12).
+项目开发、测试和自动化任务统一使用 Conda 环境 `cwr_py312`（Python 3.12）。
 
 ```powershell
 conda env update -n cwr_py312 -f environment.yml --prune
@@ -11,45 +10,41 @@ conda run -n cwr_py312 python -m pip install -e . --no-deps
 conda run -n cwr_py312 python -m pytest -p no:cacheprovider -q
 ```
 
-Run a task through the installed CLI:
+通过已安装的命令行工具运行底层标准任务：
 
 ```powershell
 conda run -n cwr_py312 cwr-engine --task tests/fixtures/minimal_task.json --output-root artifacts/runs/smoke
 ```
 
-For common business computations, use the simplified request contract instead
-of writing internal time slices, workflow steps, and output kinds manually:
+对于常见业务计算，建议使用简化的业务请求协议，不需要手工填写底层时间切片、
+工作步骤和内部输出类型：
 
 ```powershell
 conda run -n cwr_py312 cwr-engine --request examples/requests/nmg-zxb-annual-2025.json
 ```
 
-The request fields and year/month/day selection forms are documented in
-`docs/unified-business-request-contract.md`.
+业务请求字段以及年、月、日时段选择方式见
+`docs/unified-business-request-contract.md`。
 
-Real NetCDF product catalogs and their `D/M/Y` directory contract are
-documented in `docs/real-product-data-source-contract.md`.
+真实 NetCDF 产品目录及其 `D/M/Y` 目录约定见
+`docs/real-product-data-source-contract.md`。
 
-Standard time-series, distribution, and comparison figure requests are
-documented in `docs/standard-plot-contract.md`.
+标准序列图、分布图和对比图请求见 `docs/standard-plot-contract.md`。
 
-Default typography, label, panel, title, heatmap, and colorbar acceptance rules
-for all formal figures are documented in
-`docs/figure-visual-acceptance-rules.md`.
+正式图件的默认字体、标签、子图、标题、热力图和 colorbar 验收规则见
+`docs/figure-visual-acceptance-rules.md`。
 
-Single-template DOCX assembly from `report_inputs.json` is documented in
-`docs/report-product-contract.md`.
+根据 `report_inputs.json` 和单一模板生成 DOCX 的方法见
+`docs/report-product-contract.md`。
 
 ```powershell
 conda run -n cwr_py312 cwr-report --spec path/to/report_spec.json
 ```
 
-The retained single-year cloud-water business template is supported through
-the explicit profile contract in
-`docs/cloud-water-single-year-profile-contract.md`.
+现有单年云水资源业务模板通过专用报告配置协议支持，具体见
+`docs/cloud-water-single-year-profile-contract.md`。
 
-Build its standardized direct-product metrics first, as documented in
-`docs/cloud-water-business-metrics-contract.md`.
+标准化产品指标生成方式见 `docs/cloud-water-business-metrics-contract.md`。
 
 ```powershell
 conda run -n cwr_py312 cwr-engine --business-metrics-spec path/to/metrics.json
@@ -59,34 +54,29 @@ conda run -n cwr_py312 cwr-engine --business-metrics-spec path/to/metrics.json
 conda run -n cwr_py312 cwr-report --profile-spec path/to/profile.json
 ```
 
-The accepted direct-product single-year workflow can run both components from
-one transactional specification. Its contract is documented in
-`docs/cloud-water-single-year-workflow-contract.md`.
+已验收的单年直读产品流程可以通过一个事务性配置完成指标、图件和报告生成，
+具体见 `docs/cloud-water-single-year-workflow-contract.md`。
 
 ```powershell
 conda run -n cwr_py312 cwr-engine --workflow-spec path/to/workflow.json
 ```
 
-The approved multi-year workflow accepts a contiguous inclusive period of at
-least five complete years. It requires one annual and twelve monthly products
-per year and publishes standardized metrics, a spatial composite, six figures,
-two report tables, and the completed DOCX transactionally. Its contract is in
-`docs/cloud-water-multi-year-report-contract.md`.
+已验收的多年流程接受至少五个完整连续年份，起止年份均包含。每年需要一个年产品
+和十二个月产品，并以事务方式发布标准指标、空间复合数据、六幅图、两张报告表格
+和完整 DOCX。具体见 `docs/cloud-water-multi-year-report-contract.md`。
 
 ```powershell
 conda run -n cwr_py312 cwr-engine --workflow-spec examples/workflows/nmg-zxb-cloud-water-multi-year-2021-2025.json
 ```
 
-## Repository data
+## 仓库数据
 
-- `data/inputs/` contains versioned representative source data.
-- `examples/legacy-configs/` preserves pre-engine business configuration
-  records; these are not CWR engine task-schema files.
-- `artifacts/examples/` contains curated reference outputs.
-- Write new pipeline results under `artifacts/runs/`; that directory is ignored.
+- `data/inputs/`：纳入版本管理的代表性输入数据。
+- `examples/legacy-configs/`：引擎建立前的历史业务配置记录，不属于当前引擎任务协议。
+- `artifacts/examples/`：经过整理的参考产物。
+- `artifacts/runs/`：新流水线运行结果目录，已由 Git 忽略。
 
-## Delivery stages
+## 开发阶段
 
-Development follows explicit stage gates. Each stage declares its scope,
-acceptance criteria, and stop condition before implementation begins. See
-`docs/project-stage-gates.md` for the current stage boundary.
+项目开发遵循明确的阶段门控规则。每个阶段在开始实现前都要声明范围、验收条件和
+截止条件。当前阶段边界见 `docs/project-stage-gates.md`。
