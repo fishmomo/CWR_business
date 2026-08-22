@@ -818,6 +818,13 @@ plot type or formal report layout.
 
 Status: planned, not active.
 
+Implementation owner: external contractor. Codex acts only as the temporary
+supervisor and reviewer unless the user explicitly reassigns implementation.
+
+Detailed outsourcing scope, checkpoints, required evidence, and supervisor
+feedback format are defined in
+`docs/outsourcing/upper-layer-product-request-integration.md`.
+
 ### Outcome
 
 Let report and thematic-product workflows declare or consume the standardized
@@ -825,3 +832,41 @@ business request and its manifest instead of owning data-source, region,
 period, and common-output selection independently. Start with one accepted
 cloud-water workflow and retain its existing formula, figure, and DOCX
 contracts.
+
+### Included
+
+- Pilot only the accepted `cloud_water_single_year` workflow.
+- Make the standardized request or request set authoritative for source,
+  mandatory region, target year, and common variable selection.
+- Link standard request artifacts to the existing thematic input manifest.
+- Preserve the old workflow entrypoint during this stage.
+- Preserve transactional publication and add synthetic, compatibility,
+  failure-path, and real-data acceptance coverage.
+
+### Excluded
+
+- Multi-year report integration, new metrics, figures, narratives, or report
+  templates.
+- Cross-scale resampling, schedulers, caching, distributed execution, GUI, or
+  Web UI.
+- A second discovery, mask, calculation, or plotting implementation.
+
+### Acceptance
+
+- The contractor's annual-plus-monthly dependency design passes review before
+  implementation begins.
+- One standardized product request produces the accepted real 2025 single-year
+  report while the compatibility entrypoint remains operational.
+- New and old paths have evidenced metric, table, NetCDF, figure, and DOCX
+  equivalence, with any tolerance stated and justified.
+- Missing annual or monthly products fail strictly without changing an existing
+  published report.
+- The full suite passes in `cwr_py312`, the work is documented, and the changes
+  are committed as one independent milestone.
+
+### Stop condition
+
+The stage ends when the three outsourced review checkpoints and all acceptance
+checks pass. Work stops at the single-year boundary; multi-year request
+integration remains a separate planned stage and is not activated
+automatically.
