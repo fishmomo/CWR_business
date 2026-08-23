@@ -39,6 +39,19 @@ class CloudWaterYearResult:
     monthly_products: dict[int, Path]
 
 
+@dataclass(frozen=True)
+class PreparedCloudWaterYear:
+    """Immutable container for cloud-water inputs loaded exactly once."""
+
+    year: int
+    annual_path: Path
+    monthly_paths: dict[int, Path]
+    annual_dataset: xr.Dataset
+    monthly_datasets: dict[int, xr.Dataset]
+    reference_grid: xr.Dataset
+    mask: xr.DataArray
+
+
 def derive_cloud_water_year(
     product_source: dict[str, Any],
     region_spec: dict[str, Any],
@@ -49,6 +62,22 @@ def derive_cloud_water_year(
 ) -> CloudWaterYearResult:
     if (reference_grid is None) != (mask is None):
         raise ValueError("reference_grid and mask must be provided together")
+    prepared = prepare_cloud_water_year(
+        product_source, region_spec, year,
+        reference_grid=reference_grid, mask=mask,
+    )
+    return derive_cloud_water_year_from_prepared(prepared)
+
+
+def prepare_cloud_water_year(
+    product_source: dict[str, Any],
+    region_spec: dict[str, Any],
+    year: int,
+    *,
+    reference_grid: xr.Dataset | None = None,
+    mask: xr.DataArray | None = None,
+) -> PreparedCloudWaterYear:
+    """Discover, load and mask products once for the whole year."""
     annual_path, monthly_paths = _discover_direct_product_files(
         product_source,
         year,
@@ -70,14 +99,7 @@ def derive_cloud_water_year(
     if mask is None or not bool(mask.any().item()):
         raise ValueError("Compiled cloud-water mask contains no grid cells")
 
-    annual_raw = _aggregate_direct_product(
-        annual_dataset,
-        mask,
-        year,
-        month=None,
-    )
     monthly_datasets: dict[int, xr.Dataset] = {}
-    monthly_records: dict[int, dict[str, Any]] = {}
     for month, product_path in monthly_paths.items():
         dataset = _load_direct_product(
             product_path,
@@ -86,26 +108,54 @@ def derive_cloud_water_year(
         )
         _validate_product_grid(reference_grid, dataset)
         monthly_datasets[month] = dataset
+
+    return PreparedCloudWaterYear(
+        year=year,
+        annual_path=annual_path,
+        monthly_paths=monthly_paths,
+        annual_dataset=annual_dataset,
+        monthly_datasets=monthly_datasets,
+        reference_grid=reference_grid,
+        mask=mask,
+    )
+
+
+def derive_cloud_water_year_from_prepared(
+    prepared: PreparedCloudWaterYear,
+) -> CloudWaterYearResult:
+    """Compute cloud-water metrics from already loaded inputs.
+
+    This is the single derivation entry point shared by the old and new
+    orchestrators.  It must not open product files or compile masks.
+    """
+    annual_raw = _aggregate_direct_product(
+        prepared.annual_dataset,
+        prepared.mask,
+        prepared.year,
+        month=None,
+    )
+    monthly_records: dict[int, dict[str, Any]] = {}
+    for month, dataset in prepared.monthly_datasets.items():
         monthly_records[month] = _monthly_record(
             month,
-            _aggregate_direct_product(dataset, mask, year, month=month),
+            _aggregate_direct_product(dataset, prepared.mask, prepared.year, month=month),
             annual_raw["dxy"],
         )
     spatial = _direct_spatial_composite(
-        annual_dataset,
-        monthly_datasets,
-        mask,
+        prepared.annual_dataset,
+        prepared.monthly_datasets,
+        prepared.mask,
     )
     return CloudWaterYearResult(
-        year=year,
-        annual_record=_annual_record(year, annual_raw),
+        year=prepared.year,
+        annual_record=_annual_record(prepared.year, annual_raw),
         monthly_records=monthly_records,
         seasons=_seasons(monthly_records),
         spatial=spatial,
-        mask=mask,
-        reference_grid=reference_grid,
-        annual_product=annual_path,
-        monthly_products=monthly_paths,
+        mask=prepared.mask,
+        reference_grid=prepared.reference_grid,
+        annual_product=prepared.annual_path,
+        monthly_products=prepared.monthly_paths,
     )
 
 

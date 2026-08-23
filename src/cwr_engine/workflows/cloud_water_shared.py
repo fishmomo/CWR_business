@@ -39,6 +39,24 @@ def finalize_report_inputs(
     )
 
 
+def write_request_set_manifest(
+    path: Path,
+    request_set_id: str,
+    request_set: str,
+    members: list[dict[str, Any]],
+    product_report_inputs: Path,
+) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    payload = {
+        "schema_version": 1,
+        "request_set_id": request_set_id,
+        "request_set": request_set,
+        "members": members,
+        "product_report_inputs": str(product_report_inputs),
+    }
+    path.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
+
+
 def rebase_paths(value: Any, source_root: Path, target_root: Path) -> Any:
     if isinstance(value, dict):
         return {

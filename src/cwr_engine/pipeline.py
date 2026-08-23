@@ -1,4 +1,5 @@
 from pathlib import Path
+from typing import Any
 
 from cwr_engine.registries.operators import build_operator_registry
 from cwr_engine.registries.plots import build_plot_registry
@@ -130,3 +131,66 @@ def run_engine_task(task, task_path: Path, output_root: Path | None = None) -> P
             name=report_request.name,
         )
     return root
+
+
+def run_engine_task_from_prepared(
+    task,
+    task_path: Path,
+    prepared_dataset: Any,
+    mask_data: Any,
+    mask_bundle: Any,
+    output_root: Path,
+) -> Path:
+    """Run pipeline steps for a task that has already been prepared and masked.
+
+    Skips prepare and mask; executes subset, transform, stat, plot, export and
+    report_inputs as required by the task's workflow_steps.  This allows an
+    orchestrator to share one product discovery, one load and one mask across
+    multiple standard requests.
+    """
+    variable_registry = build_variable_registry()
+    operator_registry = build_operator_registry()
+    plot_registry = build_plot_registry()
+    _validate_output_requests(task)
+    _validate_variables(task, variable_registry)
+    _validate_operators(task, operator_registry)
+    _validate_time_scales(task, variable_registry, operator_registry)
+    validate_plot_requests(task, plot_registry)
+    output_root.mkdir(parents=True, exist_ok=True)
+    context: dict[str, Any] = {
+        "task": task,
+        "task_path": task_path,
+        "output_root": output_root,
+        "variable_registry": variable_registry,
+        "operator_registry": operator_registry,
+        "plot_registry": plot_registry,
+        "prepared_dataset": prepared_dataset,
+        "mask_data": mask_data,
+        "mask_bundle": mask_bundle,
+        "artifacts": [],
+        "runtime": {
+            "workflow_steps": task.workflow_steps,
+            "executed_steps": [],
+            "used_cache": [],
+        },
+    }
+    for step_name in task.workflow_steps:
+        if step_name in {"prepare", "mask"}:
+            continue
+        if step_name == "report_inputs":
+            break
+        (output_root / step_name).mkdir(parents=True, exist_ok=True)
+        runner = STEP_RUNNERS[step_name]
+        context = runner(context)
+    context["runtime"]["stat_results"] = context.get("stat_results", [])
+    requested_kinds = {request.kind for request in task.outputs}
+    if "report_inputs" in requested_kinds and "report_inputs" in task.workflow_steps:
+        report_request = next(request for request in task.outputs if request.kind == "report_inputs")
+        return write_report_inputs(
+            task=task,
+            output_root=output_root,
+            artifacts=context["artifacts"],
+            runtime=context["runtime"],
+            name=report_request.name,
+        )
+    return output_root

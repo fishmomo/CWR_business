@@ -1,8 +1,10 @@
 from __future__ import annotations
 
+from dataclasses import dataclass
 from datetime import date, timedelta
 from pathlib import Path
 import re
+from typing import Any
 
 import numpy as np
 import xarray as xr
@@ -16,14 +18,40 @@ PRODUCT_DATE_PATTERN = re.compile(
 )
 
 
+@dataclass(frozen=True)
+class PreparedNetcdfSource:
+    """Result of discovering and loading NetCDF products for a single time scale."""
+
+    dataset: xr.Dataset
+    trace: dict[str, Any]
+    files: list[Path]
+
+
 def load_netcdf_source(context: dict) -> tuple[xr.Dataset, dict]:
     task = context["task"]
     source = task.data_source
-    root = _resolve_path(source["root"], context["task_path"])
-    expected_dates = _expected_dates(task.time_slices, source["time_scale"])
-    files = _discover_files(root, source, expected_dates)
+    prepared = prepare_netcdf_source(
+        source=source,
+        time_slices=task.time_slices,
+        variables=task.variables,
+        variable_registry=context["variable_registry"],
+        task_path=context["task_path"],
+    )
+    return prepared.dataset, prepared.trace
+
+
+def prepare_netcdf_source(
+    source: dict[str, Any],
+    time_slices: list,
+    variables: list[str],
+    variable_registry: dict,
+    task_path: Path,
+) -> PreparedNetcdfSource:
+    root = _resolve_path(source["root"], task_path)
+    expected_dates = _expected_dates(time_slices, source["time_scale"])
+    files = discover_netcdf_files(root, source, expected_dates)
     datasets = [
-        _load_product_file(path, source, context["variable_registry"], task.variables)
+        load_single_netcdf_file(path, source, variable_registry, variables)
         for path in files
     ]
     dataset = _combine_datasets(datasets)
@@ -38,10 +66,14 @@ def load_netcdf_source(context: dict) -> tuple[xr.Dataset, dict]:
         "last_file": str(files[-1]),
         "time_scale": source["time_scale"],
     }
-    return dataset, trace
+    return PreparedNetcdfSource(
+        dataset=dataset,
+        trace=trace,
+        files=files,
+    )
 
 
-def _discover_files(
+def discover_netcdf_files(
     root: Path,
     source: dict,
     expected_dates: list[date],
@@ -86,17 +118,35 @@ def _discover_files(
     return [files_by_date[item] for item in expected_dates]
 
 
-def _load_product_file(
+def load_single_netcdf_file(
     path: Path,
     source: dict,
     variable_registry: dict,
     variables: list[str],
 ) -> xr.Dataset:
     engine = source.get("engine")
+    coordinate_map = source.get("coordinate_map", {})
+    source_keys = resolve_source_key_list(
+        path,
+        source,
+        variable_registry,
+        variables,
+    )
+    return load_netcdf_file_with_variables(path, engine, source_keys, coordinate_map)
+
+
+def resolve_source_key_list(
+    path: Path,
+    source: dict,
+    variable_registry: dict,
+    variables: list[str],
+) -> list[str]:
+    """Return the ordered list of source keys needed for logical variables."""
+    engine = source.get("engine")
     open_kwargs = {"engine": engine} if engine else {}
     with xr.open_dataset(path, **open_kwargs) as opened:
-        dataset = _normalize_coordinates(opened, source.get("coordinate_map", {}))
-        source_keys = []
+        dataset = normalize_coordinates(opened, source.get("coordinate_map", {}))
+        source_keys: list[str] = []
         for variable in variables:
             try:
                 resolved_keys = resolve_source_keys(
@@ -110,10 +160,30 @@ def _load_product_file(
             for source_key in resolved_keys:
                 if source_key not in source_keys:
                     source_keys.append(source_key)
-        return dataset[source_keys].load()
+        return source_keys
 
 
-def _normalize_coordinates(
+def load_netcdf_file_with_variables(
+    path: Path,
+    engine: str | None,
+    variables: list[str],
+    coordinate_map: dict[str, str] | None = None,
+) -> xr.Dataset:
+    """Load a NetCDF file and return only the requested source variables.
+
+    This is the low-level public loader used by both the generic pipeline and
+    thematic profiles that need to share the same file reads.
+    """
+    open_kwargs = {"engine": engine} if engine else {}
+    with xr.open_dataset(path, **open_kwargs) as opened:
+        dataset = normalize_coordinates(opened, coordinate_map or {})
+        missing = [name for name in variables if name not in dataset]
+        if missing:
+            raise ValueError(f"Product is missing variable {missing[0]}: {path}")
+        return dataset[variables].load()
+
+
+def normalize_coordinates(
     dataset: xr.Dataset,
     coordinate_map: dict[str, str],
 ) -> xr.Dataset:

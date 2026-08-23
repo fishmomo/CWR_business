@@ -45,8 +45,7 @@ class BusinessRequest:
     output_root: str | None
 
 
-def load_business_request(path: Path) -> BusinessRequest:
-    payload = json.loads(path.read_text(encoding="utf-8"))
+def parse_business_request(payload: dict[str, Any]) -> BusinessRequest:
     if not isinstance(payload, dict):
         raise ValueError("Business request must be a JSON object")
     _reject_unknown(
@@ -108,6 +107,11 @@ def load_business_request(path: Path) -> BusinessRequest:
         results=results,
         output_root=output_root,
     )
+
+
+def load_business_request(path: Path) -> BusinessRequest:
+    payload = json.loads(path.read_text(encoding="utf-8"))
+    return parse_business_request(payload)
 
 
 def compile_business_request(

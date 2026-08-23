@@ -139,6 +139,17 @@ class CloudWaterMetricsSpec:
 def build_cloud_water_business_metrics(spec_path: Path) -> Path:
     spec = load_cloud_water_metrics_spec(spec_path)
     metrics, spatial = derive_cloud_water_business_metrics(spec)
+    return write_cloud_water_business_metrics(spec, metrics, spatial)
+
+
+def write_cloud_water_business_metrics(
+    spec: CloudWaterMetricsSpec,
+    metrics: dict[str, Any],
+    spatial: xr.Dataset,
+    *,
+    request_set_id: str | None = None,
+    request_set_manifest: Path | None = None,
+) -> Path:
     targets = _artifact_targets(spec)
 
     spec.output_root.parent.mkdir(parents=True, exist_ok=True)
@@ -169,7 +180,12 @@ def build_cloud_water_business_metrics(spec_path: Path) -> Path:
             )
         temp_report_inputs.write_text(
             json.dumps(
-                _report_inputs_payload(spec, targets),
+                _report_inputs_payload(
+                    spec,
+                    targets,
+                    request_set_id=request_set_id,
+                    request_set_manifest=request_set_manifest,
+                ),
                 ensure_ascii=False,
                 indent=2,
             ),
@@ -231,6 +247,13 @@ def derive_cloud_water_business_metrics(
         spec.region_spec,
         spec.year,
     )
+    return build_cloud_water_metrics(spec, result)
+
+
+def build_cloud_water_metrics(
+    spec: CloudWaterMetricsSpec,
+    result: Any,
+) -> tuple[dict[str, Any], xr.Dataset]:
     input_mode = "product_catalog"
     annual = result.annual_record
     metrics = {
@@ -707,6 +730,9 @@ def _artifact_targets(spec: CloudWaterMetricsSpec) -> dict[str, Path]:
 def _report_inputs_payload(
     spec: CloudWaterMetricsSpec,
     targets: dict[str, Path],
+    *,
+    request_set_id: str | None = None,
+    request_set_manifest: Path | None = None,
 ) -> dict[str, Any]:
     artifacts = [
         {
@@ -739,6 +765,18 @@ def _report_inputs_payload(
     workflow_steps = ["business_metrics"]
     workflow_steps.append("profile_figures")
     workflow_steps.append("report_inputs")
+    inputs: dict[str, Any] = {
+        "metric_profile": PROFILE_NAME,
+        "metric_input_mode": "product_catalog",
+        "time_slices": [
+            {"scale": "year", "year": spec.year, "label": str(spec.year)}
+        ],
+        "region_name": spec.region_name,
+    }
+    if request_set_id is not None:
+        inputs["request_set_id"] = request_set_id
+    if request_set_manifest is not None:
+        inputs["request_set_manifest"] = str(request_set_manifest)
     return {
         "schema_version": 1,
         "task": {
@@ -746,14 +784,7 @@ def _report_inputs_payload(
             "status": "success",
             "output_root": str(spec.output_root),
         },
-        "inputs": {
-            "metric_profile": PROFILE_NAME,
-            "metric_input_mode": "product_catalog",
-            "time_slices": [
-                {"scale": "year", "year": spec.year, "label": str(spec.year)}
-            ],
-            "region_name": spec.region_name,
-        },
+        "inputs": inputs,
         "artifacts": artifacts,
         "runtime": {
             "workflow_steps": workflow_steps,

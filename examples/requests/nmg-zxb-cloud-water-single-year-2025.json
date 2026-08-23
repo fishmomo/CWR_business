@@ -1,0 +1,54 @@
+{
+  "schema_version": 1,
+  "request_set": "cloud_water_single_year",
+  "request_set_id": "nmg-zxb-cloud-water-2025",
+  "shared_request": {
+    "data_source": {
+      "kind": "netcdf",
+      "root": "H:\\result_china\\NCEP",
+      "engine": "h5netcdf"
+    },
+    "region": {
+      "kind": "shp",
+      "path": "../../data/inputs/内蒙古中西部/内蒙古中西部_7盟市融合研究区.shp"
+    }
+  },
+  "requests": {
+    "annual": {
+      "request_id": "nmg-zxb-cloud-water-2025-annual",
+      "period": {"scale": "year", "years": [2025]},
+      "variables": ["GMv", "GMh", "CWR", "Ps", "Cvh", "CEv", "PEh"],
+      "operators": ["mean"],
+      "results": [
+        {"scope": "region", "format": "csv", "name": "annual_regional"},
+        {"scope": "grid", "format": "netcdf", "name": "annual_grids"}
+      ]
+    },
+    "monthly": {
+      "request_id": "nmg-zxb-cloud-water-2025-monthly",
+      "period": {
+        "scale": "month",
+        "years": [2025],
+        "months": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
+      },
+      "variables": ["CWR", "Ps", "Cvh"],
+      "operators": ["mean"],
+      "results": [
+        {"scope": "region", "format": "csv", "name": "monthly_regional"},
+        {"scope": "grid", "format": "netcdf", "name": "monthly_grids"}
+      ]
+    }
+  },
+  "product": {
+    "region_name": "内蒙古中西部七盟市研究区",
+    "template": "../../data/templates/Simple-Year_Evaluation_Report-xizang-cm.docx",
+    "report_filename": "2025-Year_Evaluation_Report-nmg-zxb.docx",
+    "image_width_inches": 4.0,
+    "image_widths_inches": {
+      "target_image3": 6.2,
+      "target_image4": 6.2,
+      "target_image5": 6.2
+    }
+  },
+  "output_root": "../../artifacts/runs/nmg-zxb-cloud-water-single-year-2025"
+}
