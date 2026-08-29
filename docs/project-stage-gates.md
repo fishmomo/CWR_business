@@ -814,12 +814,12 @@ with 88 tests in `cwr_py312`. Per the current working rule, no additional visual
 figure-review pass was performed because this stage did not introduce a new
 plot type or formal report layout.
 
-## Next planned stage: upper-layer product request integration
+## Completed stage: upper-layer product request integration
 
-Status: implementation design frozen; external implementation not active.
+Status: completed on 2026-08-30.
 
-Implementation owner: external contractor. Codex acts only as the temporary
-supervisor and reviewer unless the user explicitly reassigns implementation.
+Implementation owner: external contractor. Codex completed supervisory review,
+real-data acceptance, and one manifest-path correction discovered at checkpoint 3.
 
 Detailed outsourcing scope, checkpoints, required evidence, and supervisor
 feedback format are defined in
@@ -872,3 +872,36 @@ The stage ends when the three outsourced review checkpoints and all acceptance
 checks pass. Work stops at the single-year boundary; multi-year request
 integration remains a separate planned stage and is not activated
 automatically.
+
+The acceptance checks pass. The unified request set reads one official annual
+product and twelve official monthly products, compiles the required region mask
+once, writes annual and monthly standard-request outputs, and publishes the
+accepted 2025 single-year metrics, spatial composite, five figures, and DOCX in
+one transaction. Against the compatibility workflow, the business metrics JSON,
+spatial NetCDF, and all five PNGs are byte-identical. The DOCX has identical
+OOXML parts and embedded media, with 58 paragraphs, two tables, five images, and
+no unresolved placeholders. A checkpoint-3 defect that left staging paths in
+`mask_bundle.json` was corrected and covered by a regression assertion across
+all published JSON files. The full suite passes with 119 tests in `cwr_py312`.
+LibreOffice was not installed for the current Windows account, so a new page
+render was not produced; exact OOXML and image equivalence to the previously
+accepted compatibility output provides the layout-equivalence evidence for this
+stage.
+
+## Next planned stage: multi-year report request integration
+
+Status: planned, not active.
+
+### Outcome
+
+Apply the accepted annual-plus-monthly request-set pattern to the existing
+multi-year cloud-water report so its contiguous year range, mandatory region,
+standard outputs, thematic metrics, six figures, and DOCX are driven through
+one unified transactional request without changing accepted formulas or layout.
+
+### Boundary
+
+This stage requires its own frozen design, synthetic acceptance, compatibility
+comparison, and real 2021-2025 acceptance before implementation begins. It does
+not add new metrics, figures, templates, resampling, scheduling, caching, GUI,
+or Web UI.

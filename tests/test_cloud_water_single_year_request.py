@@ -198,6 +198,9 @@ def test_request_set_publishes_complete_run(tmp_path: Path) -> None:
     assert (output / "standard_requests" / "annual" / "report_inputs" / "request_manifest.json").is_file()
     assert (output / "standard_requests" / "monthly" / "report_inputs" / "request_manifest.json").is_file()
 
+    for json_path in output.rglob("*.json"):
+        assert "staging" not in json_path.read_text(encoding="utf-8")
+
 
 def test_cli_dispatches_request_set(tmp_path: Path) -> None:
     spec_path = _write_request_set_spec(tmp_path)

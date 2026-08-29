@@ -61,6 +61,14 @@ conda run -n cwr_py312 cwr-report --profile-spec path/to/profile.json
 conda run -n cwr_py312 cwr-engine --workflow-spec path/to/workflow.json
 ```
 
+单年云水资源报告也可以通过统一请求集入口运行。请求集以同一数据源和必要区域为
+权威输入，分别声明年度与月度标准请求，并在一次事务中生成标准结果、专题指标、
+五幅图和 DOCX。具体见 `docs/cloud-water-single-year-request-set-protocol.md`。
+
+```powershell
+conda run -n cwr_py312 cwr-engine --request examples/requests/nmg-zxb-cloud-water-single-year-2025.json
+```
+
 已验收的多年流程接受至少五个完整连续年份，起止年份均包含。每年需要一个年产品
 和十二个月产品，并以事务方式发布标准指标、空间复合数据、六幅图、两张报告表格
 和完整 DOCX。具体见 `docs/cloud-water-multi-year-report-contract.md`。

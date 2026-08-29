@@ -182,6 +182,11 @@ def build_cloud_water_single_year_request_set(spec_path: Path) -> Path:
         _verify_manifest_paths(staged_output_root)
         _rebase_request_set_manifest(request_set_manifest_path, staged_output_root, spec.output_root)
         _rebase_member_manifests(staged_output_root, spec.output_root)
+        _rebase_json_file(
+            staged_output_root / "mask" / "mask_bundle.json",
+            staged_output_root,
+            spec.output_root,
+        )
         finalize_report_inputs(
             report_inputs_path,
             staged_output_root,
@@ -643,3 +648,14 @@ def _rebase_member_manifests(staged_output: Path, final_output: Path) -> None:
                 json.dumps(payload, ensure_ascii=False, indent=2),
                 encoding="utf-8",
             )
+
+
+def _rebase_json_file(path: Path, staged_output: Path, final_output: Path) -> None:
+    if not path.is_file():
+        return
+    payload = json.loads(path.read_text(encoding="utf-8"))
+    payload = rebase_paths(payload, staged_output, final_output)
+    path.write_text(
+        json.dumps(payload, ensure_ascii=False, indent=2),
+        encoding="utf-8",
+    )
