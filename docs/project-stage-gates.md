@@ -1081,10 +1081,9 @@ NetCDF, and DOCX regression suite. No business formulas, protocols, artifacts,
 reports, compatibility entrypoints, or output schemas changed. The stage stops
 here as required.
 
-## Next planned stage: workflow-spec compatibility retirement
+## Completed stage: workflow-spec compatibility retirement
 
-Status: planned, not active. Activation requires explicit user approval because
-the stage removes a previously supported CLI entrypoint.
+Status: completed on 2026-08-31 with explicit user approval.
 
 ### Outcome
 
@@ -1129,3 +1128,40 @@ without changing the standard engine or thematic product behavior.
 - Stop after migration, removal, real-data comparison, full regression,
   documentation, and one independent milestone commit. Do not remove any other
   command or begin a new product stage automatically.
+
+### Implemented result
+
+The `--workflow-spec` CLI option, its single-year and multi-year dispatch, both
+duplicate workflow modules, their public exports, two runnable compatibility
+examples, and the compatibility-only test module have been removed. Supported
+documentation now uses the registered `--request` products; retained historical
+contracts identify the retired command and its replacement. Standard `--task`,
+ordinary and thematic `--request`, `--business-metrics-spec`, and report
+`--profile-spec` entrypoints remain unchanged.
+
+The real 2025 single-year and 2021-2025 multi-year registered requests were run
+again. Across both published directories, all 35 formal files matched the
+pre-retirement SHA-256 baseline; both DOCX files also matched across every
+internal OOXML part. The complete suite passes with 145 tests in `cwr_py312`.
+The stage stops here as required.
+
+## Next planned stage: third thematic product contract selection
+
+Status: planned, not active.
+
+### Outcome and boundary
+
+Select one existing business workflow beyond cloud-water reports and the daily
+precipitation analysis, then freeze its request-set contract and accepted real
+baseline before implementation. The selection must identify its source time
+scales, mandatory mask, calculations, requested variables, tables, NetCDF
+outputs, figures, and any report template. This planning stage may inspect and
+run retained business code but may not add a product adapter or modify the
+shared engine.
+
+### Acceptance and stop condition
+
+Stop when one candidate has accessible real inputs, a reproducible baseline,
+an explicit input/output and failure contract, a mapping to existing shared
+engine capabilities, and a written list of genuinely missing capabilities.
+Implementation becomes a separate stage and requires explicit activation.

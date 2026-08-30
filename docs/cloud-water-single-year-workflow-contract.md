@@ -1,5 +1,8 @@
 # Cloud-Water Single-Year Workflow Contract
 
+Status: historical. The `--workflow-spec` entrypoint was retired on
+2026-08-31. Use the registered `cloud_water_single_year` request set instead.
+
 ## Purpose
 
 The `cloud_water_single_year` workflow runs the accepted direct-product
@@ -53,10 +56,12 @@ for named report image slots.
 ## Execution
 
 ```powershell
-conda run -n cwr_py312 cwr-engine --workflow-spec path/to/workflow.json
+conda run -n cwr_py312 cwr-engine --request examples/requests/nmg-zxb-cloud-water-single-year-2025.json
 ```
 
-The command returns the final DOCX path.
+The historical workflow JSON is no longer runnable. Migrate its data source,
+region, template, output, and year fields to the single-year request-set
+protocol documented in `cloud-water-single-year-request-set-protocol.md`.
 
 ## Published Layout
 

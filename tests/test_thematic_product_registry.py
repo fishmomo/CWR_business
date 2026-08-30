@@ -90,6 +90,23 @@ def test_cli_reports_unknown_thematic_product(
     assert "Unsupported request set: missing_product" in capsys.readouterr().err
 
 
+def test_cli_rejects_retired_workflow_spec(
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    with pytest.raises(SystemExit) as exc_info:
+        main(
+            [
+                "--task",
+                "placeholder-task.json",
+                "--workflow-spec",
+                "retired-workflow.json",
+            ]
+        )
+
+    assert exc_info.value.code == 2
+    assert "unrecognized arguments: --workflow-spec" in capsys.readouterr().err
+
+
 def test_registry_instances_do_not_share_mutable_state() -> None:
     first = build_thematic_product_registry()
     second = build_thematic_product_registry()

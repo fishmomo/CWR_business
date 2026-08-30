@@ -231,4 +231,5 @@ conda run -n cwr_py312 cwr-engine --request examples/requests/nmg-zxb-cloud-wate
 
 - 新请求集仍通过统一用户入口执行：`cwr-engine --request <request-set.json>`
 - `--request` 根据顶层 `request_set` 分发到请求集编排器；普通 `BusinessRequest` 行为保持不变
-- 旧 `cwr-engine --workflow-spec <single-year.json>` 继续工作
+- `--workflow-spec` 已于 2026-08-31 退役；原单年配置应迁移为本协议的
+  `cloud_water_single_year` 请求集。

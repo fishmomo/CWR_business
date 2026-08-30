@@ -11,9 +11,11 @@
 
 ```powershell
 conda run -n cwr_py312 cwr-engine --request examples/requests/nmg-zxb-cloud-water-multi-year-2021-2025.json
-conda run -n cwr_py312 cwr-engine --workflow-spec examples/workflows/nmg-zxb-cloud-water-multi-year-2021-2025.json
 conda run -n cwr_py312 python -m pytest -p no:cacheprovider -q
 ```
+
+原 `--workflow-spec` 命令是本次历史验收的对照入口，已于 2026-08-31
+退役；当前多年报告只使用上述 `--request` 命令。
 
 ## 合成验收
 
@@ -29,7 +31,7 @@ conda run -n cwr_py312 python -m pytest -p no:cacheprovider -q
 - 产品：`H:\result_china\NCEP` 中 2021–2025 年 5 个年度和 60 个月度产品。
 - 区域：内蒙古中西部七盟市研究区 SHP，使用同一内部 mask。
 - 新入口：`artifacts/runs/nmg-zxb-cloud-water-multi-year-request-2021-2025`。
-- 兼容入口：`artifacts/runs/nmg-zxb-cloud-water-multi-year-2021-2025`。
+- 历史兼容基线：`artifacts/runs/nmg-zxb-cloud-water-multi-year-2021-2025`。
 - 业务指标 JSON、空间 NetCDF 和六幅 PNG 的 SHA-256 均一致。
 - DOCX 正文 66 段、2 张表、6 幅图一致；全部 OOXML 部件一致，占位符为 0。
 - 新入口额外产出年度/月度标准 CSV、标准 NetCDF、成员清单和请求集清单。
@@ -42,5 +44,5 @@ NetCDF4/HDF5；现有格点导出、业务请求和目录数据源测试均已�
 
 ## 环境限制
 
-当前 Windows 账户未发现 LibreOffice，因此本轮未重新渲染 DOCX 页面。新旧报告
-全部 OOXML 部件及六个嵌入媒体逐字节一致，对照报告此前已完成页面验收。
+本轮以 DOCX 的 OOXML 部件和六个嵌入媒体逐字节一致作为结构等价依据；对照报告
+此前已完成页面验收。
