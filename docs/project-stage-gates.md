@@ -1080,3 +1080,52 @@ including focused registry tests and the complete existing request, figure,
 NetCDF, and DOCX regression suite. No business formulas, protocols, artifacts,
 reports, compatibility entrypoints, or output schemas changed. The stage stops
 here as required.
+
+## Next planned stage: workflow-spec compatibility retirement
+
+Status: planned, not active. Activation requires explicit user approval because
+the stage removes a previously supported CLI entrypoint.
+
+### Outcome
+
+Retire the duplicate single-year and multi-year `--workflow-spec` execution
+paths now that the registered `--request` products are the authoritative,
+accepted entrypoints. This removes two parallel orchestration implementations
+without changing the standard engine or thematic product behavior.
+
+### Included
+
+- Inventory all remaining `--workflow-spec` callers, examples, tests, exports,
+  and documentation.
+- Migrate retained runnable examples and README commands to the equivalent
+  single-year and multi-year `--request` files.
+- Re-run the accepted real 2025 and 2021-2025 requests and compare their formal
+  metrics, spatial NetCDF, figures, and DOCX structure with the accepted
+  baselines.
+- Remove the `--workflow-spec` CLI option, the two compatibility workflow
+  modules, their exports, and tests that exist only for the retired path.
+- Document the replacement command and give removed usage a clear migration
+  explanation where historical contracts are retained.
+
+### Excluded
+
+- Removing `--business-metrics-spec`, report `--profile-spec`, standard
+  `--task`, or ordinary `--request` execution.
+- Changing request-set protocols, product formulas, statistics, masks, figures,
+  templates, reports, artifact schemas, or output paths.
+- Adding another thematic product, dynamic plugins, scheduling, caching, GUI,
+  or Web UI.
+
+### Acceptance and stop condition
+
+- Every retained runnable single-year and multi-year example uses `--request`;
+  no supported documentation directs users to `--workflow-spec`.
+- Runtime code contains no compatibility workflow dispatch or duplicate
+  single-year/multi-year workflow implementation.
+- Both real registered requests reproduce the accepted formal artifacts and
+  reports, and the complete test suite passes in `cwr_py312`.
+- Historical documentation may describe the retired command but must identify
+  its replacement unambiguously.
+- Stop after migration, removal, real-data comparison, full regression,
+  documentation, and one independent milestone commit. Do not remove any other
+  command or begin a new product stage automatically.
