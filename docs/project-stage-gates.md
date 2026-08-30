@@ -1145,9 +1145,9 @@ pre-retirement SHA-256 baseline; both DOCX files also matched across every
 internal OOXML part. The complete suite passes with 145 tests in `cwr_py312`.
 The stage stops here as required.
 
-## Next planned stage: third thematic product contract selection
+## Completed stage: third thematic product contract selection
 
-Status: planned, not active.
+Status: completed on 2026-08-31.
 
 ### Outcome and boundary
 
@@ -1165,3 +1165,55 @@ Stop when one candidate has accessible real inputs, a reproducible baseline,
 an explicit input/output and failure contract, a mapping to existing shared
 engine capabilities, and a written list of genuinely missing capabilities.
 Implementation becomes a separate stage and requires explicit activation.
+
+### Implemented result
+
+The selected product is `seasonal_cloud_water_anomaly`, derived from the
+retained 2025 seasonal-anomaly notebook. The precipitation-frequency scripts
+were rejected as a third product because their class-day and class-CWR behavior
+is already covered by `daily_precipitation_analysis`.
+
+The frozen version-1 contract uses monthly `Cvh` (`MC/dxy`), a mandatory region
+mask, a continuous reference range of at least five years, one non-overlapping
+target year, same-calendar-year seasons, and target-minus-reference-mean grid
+anomalies. It produces a masked NetCDF, seasonal summary CSV, four-panel figure,
+standard monthly results, and unified manifests, but no DOCX. The exact request,
+formulas, figure rules, failures, reuse map, and implementation exclusions are
+defined in `docs/seasonal-cloud-water-anomaly-request-set-contract.md`.
+
+The real CRA40 1-degree baseline reads all 312 monthly products from 2000-2025,
+compiles a 349-cell northern-region mask, and stores target, 2000-2024 reference
+mean, and anomaly fields for four seasons. An independent second calculation
+reproduced the canonical anomaly SHA-256
+`49ddbd105004fdaab61d23131f189b29cf995565959ce7fe83a67f63043e86b4`.
+The design stage stops here as required.
+
+## Next planned stage: seasonal cloud-water anomaly request integration
+
+Status: planned, not active.
+
+### Outcome and boundary
+
+Implement the frozen `seasonal_cloud_water_anomaly` request set as a thin
+registered product. Reuse monthly product preparation, the single mandatory
+mask, standard outputs, transaction publication, and current plotting rules.
+Add only the contract loader, seasonal reference/target derivation, three
+thematic writers, registry descriptor, tests, and one real request example.
+
+Do not add arbitrary variables, percentage anomalies, trend significance,
+cross-year winters, resampling, DOCX reports, dynamic plugins, scheduling,
+caching, GUI, or Web UI.
+
+### Acceptance and stop condition
+
+- Synthetic tests cover exact formulas, season order, protocol failures,
+  missing/duplicate months, incompatible grids, empty masks, and publish
+  failure.
+- Every real monthly product is loaded once, one mask is compiled and reused,
+  and no second discovery or preparation path is introduced.
+- The real 2000-2025 request reproduces the accepted masked arrays and seasonal
+  summary, and the four-panel PNG passes the current visual rules.
+- Existing products and the complete suite pass unchanged.
+- Stop after protocol implementation, real-data acceptance, documentation, and
+  one independent milestone commit. Do not expand version 1 or begin another
+  product automatically.

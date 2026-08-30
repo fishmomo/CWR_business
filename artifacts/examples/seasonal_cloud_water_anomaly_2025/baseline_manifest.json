@@ -1,0 +1,100 @@
+{
+  "schema_version": 1,
+  "candidate_product": "seasonal_cloud_water_anomaly",
+  "status": "planning baseline; not an engine product",
+  "source": {
+    "root": "H:\\YeWu\\cm\\CRA40_trans1P00\\M",
+    "pattern": "ResultGrid_M_<year>-<month>-01*.nc",
+    "engine": "h5netcdf",
+    "input_file_count": 312,
+    "catalog_signature": "d58f6b8146a7aee7d06cd492a0a7a3b002781cd4b81ec7fb37be09c23dc24e7e",
+    "source_variable": "MC",
+    "area_variable": "dxy"
+  },
+  "region": {
+    "kind": "shp",
+    "path": "H:\\我的业务\\CM\\2026-04\\shp\\merged_beifang\\merged_beifang.shp",
+    "mask_cell_count": 349,
+    "grid_shape": [
+      41,
+      71
+    ]
+  },
+  "period": {
+    "baseline_years": [
+      2000,
+      2024
+    ],
+    "target_year": 2025,
+    "seasons": {
+      "spring": [
+        3,
+        4,
+        5
+      ],
+      "summer": [
+        6,
+        7,
+        8
+      ],
+      "autumn": [
+        9,
+        10,
+        11
+      ],
+      "winter": [
+        12,
+        1,
+        2
+      ]
+    },
+    "winter_rule": "same labeled calendar year"
+  },
+  "formula": {
+    "normalized_variable": "Cvh",
+    "depth_mm": "MC / dxy",
+    "seasonal_value": "sum of the three monthly depth fields",
+    "anomaly": "target seasonal value - arithmetic mean of 25 yearly seasonal values"
+  },
+  "array_sha256": {
+    "target_cvh_mm": "8595a8489cbad7b73549cc56acac32634a1d803a5aa8c09e5ebd2866864bd520",
+    "baseline_mean_cvh_mm": "2baa3c793aaf36418ab3b3d92542b1bea63c52b20b1c57e8ea0813e4702412e8",
+    "anomaly_cvh_mm": "49ddbd105004fdaab61d23131f189b29cf995565959ce7fe83a67f63043e86b4",
+    "mask": "5f88d8b8aea2c1baca317ba95e5b9c6b5075c75087f60d84379b1574373eed4a"
+  },
+  "season_summary": {
+    "spring": {
+      "target_mean_mm": 87.20148655014988,
+      "baseline_mean_mm": 86.43951030610508,
+      "anomaly_mean_mm": 0.7619762440447911,
+      "anomaly_min_mm": -63.887277970575695,
+      "anomaly_max_mm": 102.5171682697805
+    },
+    "summer": {
+      "target_mean_mm": 233.6127033047794,
+      "baseline_mean_mm": 194.11681990646343,
+      "anomaly_mean_mm": 39.495883398315996,
+      "anomaly_min_mm": -124.02921451941324,
+      "anomaly_max_mm": 411.91674079870774
+    },
+    "autumn": {
+      "target_mean_mm": 123.11859517093248,
+      "baseline_mean_mm": 90.79163676735398,
+      "anomaly_mean_mm": 32.3269584035785,
+      "anomaly_min_mm": -46.53458023307263,
+      "anomaly_max_mm": 601.4639406019013
+    },
+    "winter": {
+      "target_mean_mm": 39.270536844946356,
+      "baseline_mean_mm": 37.87861668318615,
+      "anomaly_mean_mm": 1.3919201617601966,
+      "anomaly_min_mm": -14.545070447837787,
+      "anomaly_max_mm": 19.74525008356119
+    }
+  },
+  "artifacts": {
+    "numeric_baseline": "seasonal_cvh_anomaly_baseline.nc",
+    "historical_figure": "historical_notebook_figure.png",
+    "historical_figure_is_pixel_acceptance": false
+  }
+}
