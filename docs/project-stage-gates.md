@@ -1017,9 +1017,9 @@ artifact used an obsolete 72-cell mask; the new product uses the accepted
 common cells. The three figures follow the current 15-16 point text, panel-label,
 title, and colorbar rules. Formal JSON contains no staging paths.
 
-## Next planned stage: thematic product registry
+## Active stage: thematic product registry
 
-Status: planned, not active.
+Status: active from 2026-08-30. Implementation has not started.
 
 ### Outcome
 
@@ -1034,3 +1034,34 @@ The registry must preserve every current command and artifact. It may not
 change product formulas, protocols, figures, reports, or compatibility
 entrypoints, and it must stop after registry dispatch and regression coverage
 are complete.
+
+### Included
+
+- Add one explicit registry that maps each request-set name to its loader,
+  builder, protocol name, and static capabilities.
+- Register the existing cloud-water single-year, cloud-water multi-year, and
+  daily-precipitation products without changing their public behavior.
+- Move request-set selection out of CLI conditionals and delegate it to the
+  registry.
+- Define deterministic errors for unknown and duplicate product names.
+- Add focused registry tests and retain full regression coverage.
+
+### Excluded
+
+- Dynamic plugins, Python entry points, configuration discovery, and external
+  workflow platforms.
+- New thematic products, indicators, formulas, figures, report templates, or
+  output formats.
+- Changes to current request protocols, artifact schemas, CLI compatibility
+  entrypoints, and business calculations.
+
+### Acceptance and stop condition
+
+- All three existing products resolve and execute through the registry.
+- The CLI contains no product-specific request-set dispatch branch.
+- Unknown and duplicate names fail with clear, stable errors.
+- Existing commands and artifacts remain compatible, and the complete test
+  suite passes together with the new registry tests.
+- After implementation, documentation, regression verification, and one
+  independent milestone commit are complete, stop this stage. Do not continue
+  into another product adapter or plugin framework automatically.
