@@ -1017,9 +1017,9 @@ artifact used an obsolete 72-cell mask; the new product uses the accepted
 common cells. The three figures follow the current 15-16 point text, panel-label,
 title, and colorbar rules. Formal JSON contains no staging paths.
 
-## Active stage: thematic product registry
+## Completed stage: thematic product registry
 
-Status: active from 2026-08-30. Implementation has not started.
+Status: completed on 2026-08-30.
 
 ### Outcome
 
@@ -1065,3 +1065,18 @@ are complete.
 - After implementation, documentation, regression verification, and one
   independent milestone commit are complete, stop this stage. Do not continue
   into another product adapter or plugin framework automatically.
+
+### Implemented result
+
+`cwr_engine.registries.thematic_products` now owns the explicit product
+descriptors and request-set lookup. Each descriptor declares its loader,
+builder, protocol name and version, and static capabilities. The CLI resolves
+all three existing request sets through this registry and no longer contains
+product-specific request-set dispatch branches. Duplicate and unknown names
+have deterministic errors.
+
+Verification completed in the `cwr_py312` environment: 146 tests passed,
+including focused registry tests and the complete existing request, figure,
+NetCDF, and DOCX regression suite. No business formulas, protocols, artifacts,
+reports, compatibility entrypoints, or output schemas changed. The stage stops
+here as required.

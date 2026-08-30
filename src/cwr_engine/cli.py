@@ -13,15 +13,7 @@ from cwr_engine.workflows.cloud_water_single_year import (
 from cwr_engine.workflows.cloud_water_multi_year import (
     build_cloud_water_multi_year_workflow,
 )
-from cwr_engine.workflows.cloud_water_single_year_request import (
-    build_cloud_water_single_year_request_set,
-)
-from cwr_engine.workflows.cloud_water_multi_year_request import (
-    build_cloud_water_multi_year_request_set,
-)
-from cwr_engine.workflows.daily_precipitation_request import (
-    build_daily_precipitation_request_set,
-)
+from cwr_engine.registries.thematic_products import THEMATIC_PRODUCTS
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -40,14 +32,11 @@ def main(argv: list[str] | None = None) -> int:
         if request_set:
             if args.output_root:
                 parser.error("--output-root cannot be used with request sets")
-            if request_set == "cloud_water_single_year":
-                output = build_cloud_water_single_year_request_set(request_path)
-            elif request_set == "cloud_water_multi_year":
-                output = build_cloud_water_multi_year_request_set(request_path)
-            elif request_set == "daily_precipitation_analysis":
-                output = build_daily_precipitation_request_set(request_path)
-            else:
-                parser.error(f"Unsupported request set: {request_set}")
+            try:
+                product = THEMATIC_PRODUCTS.resolve(request_set)
+            except LookupError as exc:
+                parser.error(str(exc))
+            output = product.builder(request_path)
         else:
             output = run_business_request(
                 request_path,
