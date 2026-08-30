@@ -888,9 +888,9 @@ render was not produced; exact OOXML and image equivalence to the previously
 accepted compatibility output provides the layout-equivalence evidence for this
 stage.
 
-## Next planned stage: multi-year report request integration
+## Completed stage: multi-year report request integration
 
-Status: planned, not active.
+Status: completed on 2026-08-30.
 
 ### Outcome
 
@@ -905,3 +905,38 @@ This stage requires its own frozen design, synthetic acceptance, compatibility
 comparison, and real 2021-2025 acceptance before implementation begins. It does
 not add new metrics, figures, templates, resampling, scheduling, caching, GUI,
 or Web UI.
+
+The binding protocol, execution chain, failure coverage, acceptance checks, and
+stop condition are defined in
+`docs/cloud-water-multi-year-request-set-protocol.md`.
+
+The acceptance checks pass. One `cloud_water_multi_year` request set expands to
+annual and monthly standard requests covering five continuous years, discovers
+and loads five annual and sixty monthly products exactly once, compiles one mask,
+derives each year once, and publishes all standard and thematic artifacts in one
+transaction. The real Inner Mongolia central-western 2021-2025 metrics JSON,
+spatial NetCDF, and all six PNGs are byte-identical to the compatibility
+workflow. The DOCX has identical OOXML parts, 66 paragraphs, two tables, six
+images, and no unresolved placeholders. Standard grid exports now use the
+declared `h5netcdf` backend after multi-variable NetCDF3 output exposed an
+invalid unlimited-dimension header. Synthetic tests cover protocol validation,
+65 loads, one mask, five derivations, missing/duplicate products, grid mismatch,
+DOCX failure, publish failure, and staging-path cleanup. The full suite passes
+with 132 tests in `cwr_py312`.
+
+## Next planned stage: request-set contract consolidation
+
+Status: planned, not active.
+
+### Outcome
+
+Consolidate duplicated single-year and multi-year request-set parsing,
+product-field validation, prepared dataset assembly, and mask-bundle metadata
+behind public shared APIs. Define the long-term compatibility policy for the
+retained `--workflow-spec` entrypoints without removing them in that stage.
+
+### Boundary
+
+This is a maintenance-only candidate stage. It must not change formulas,
+statistics, figures, templates, JSON/NetCDF contents, report wording, or user
+period semantics. Activation requires a separate scope decision.

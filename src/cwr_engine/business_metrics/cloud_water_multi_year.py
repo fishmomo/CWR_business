@@ -21,7 +21,10 @@ from cwr_engine.business_metrics.cloud_water_config import (
     required_text,
     resolve_path,
 )
-from cwr_engine.business_metrics.cloud_water_core import derive_cloud_water_year
+from cwr_engine.business_metrics.cloud_water_core import (
+    CloudWaterYearResult,
+    derive_cloud_water_year,
+)
 from cwr_engine.business_metrics.cloud_water_multi_year_figures import (
     IMAGE_SLOTS,
     render_cloud_water_multi_year_figures,
@@ -46,6 +49,17 @@ class CloudWaterMultiYearMetricsSpec:
 def build_cloud_water_multi_year_business_metrics(spec_path: Path) -> Path:
     spec = load_cloud_water_multi_year_metrics_spec(spec_path)
     metrics, spatial = derive_cloud_water_multi_year_business_metrics(spec)
+    return write_cloud_water_multi_year_business_metrics(spec, metrics, spatial)
+
+
+def write_cloud_water_multi_year_business_metrics(
+    spec: CloudWaterMultiYearMetricsSpec,
+    metrics: dict[str, Any],
+    spatial: xr.Dataset,
+    *,
+    request_set_id: str | None = None,
+    request_set_manifest: Path | None = None,
+) -> Path:
     targets = _artifact_targets(spec)
 
     spec.output_root.parent.mkdir(parents=True, exist_ok=True)
@@ -74,7 +88,12 @@ def build_cloud_water_multi_year_business_metrics(spec_path: Path) -> Path:
         )
         temp_report_inputs.write_text(
             json.dumps(
-                _report_inputs_payload(spec, targets),
+                _report_inputs_payload(
+                    spec,
+                    targets,
+                    request_set_id=request_set_id,
+                    request_set_manifest=request_set_manifest,
+                ),
                 ensure_ascii=False,
                 indent=2,
             ),
@@ -130,11 +149,7 @@ def derive_cloud_water_multi_year_business_metrics(
     spec: CloudWaterMultiYearMetricsSpec,
 ) -> tuple[dict[str, Any], xr.Dataset]:
     years = list(range(spec.start_year, spec.end_year + 1))
-    annual_series: list[dict[str, Any]] = []
-    monthly_by_year: dict[int, dict[int, dict[str, Any]]] = {}
-    spatial_by_year: list[xr.Dataset] = []
-    annual_sources: list[str] = []
-    monthly_sources: list[str] = []
+    results: list[CloudWaterYearResult] = []
     reference_grid: xr.Dataset | None = None
     mask: xr.DataArray | None = None
     for year in years:
@@ -147,8 +162,23 @@ def derive_cloud_water_multi_year_business_metrics(
         )
         reference_grid = result.reference_grid
         mask = result.mask
-        annual_series.append(result.annual_record)
-        monthly_by_year[year] = {
+        results.append(result)
+    return derive_cloud_water_multi_year_from_results(spec, results)
+
+
+def derive_cloud_water_multi_year_from_results(
+    spec: CloudWaterMultiYearMetricsSpec,
+    results: list[CloudWaterYearResult],
+) -> tuple[dict[str, Any], xr.Dataset]:
+    years = list(range(spec.start_year, spec.end_year + 1))
+    if [result.year for result in results] != years:
+        raise ValueError("Prepared multi-year results do not match requested years")
+    if not results:
+        raise ValueError("Multi-year derivation requires prepared yearly results")
+
+    annual_series = [result.annual_record for result in results]
+    monthly_by_year = {
+        result.year: {
             month: {
                 key: value
                 for key, value in record.items()
@@ -156,14 +186,16 @@ def derive_cloud_water_multi_year_business_metrics(
             }
             for month, record in result.monthly_records.items()
         }
-        spatial_by_year.append(result.spatial)
-        annual_sources.append(str(result.annual_product))
-        monthly_sources.extend(
-            str(result.monthly_products[month]) for month in range(1, 13)
-        )
-
-    if mask is None:
-        raise ValueError("Multi-year derivation produced no region mask")
+        for result in results
+    }
+    spatial_by_year = [result.spatial for result in results]
+    annual_sources = [str(result.annual_product) for result in results]
+    monthly_sources = [
+        str(result.monthly_products[month])
+        for result in results
+        for month in range(1, 13)
+    ]
+    mask = results[0].mask
 
     _validate_dxy(annual_series)
     monthly_climatology = _monthly_climatology(years, monthly_by_year)
@@ -468,6 +500,9 @@ def _artifact_targets(
 def _report_inputs_payload(
     spec: CloudWaterMultiYearMetricsSpec,
     targets: dict[str, Path],
+    *,
+    request_set_id: str | None = None,
+    request_set_manifest: Path | None = None,
 ) -> dict[str, Any]:
     artifacts = [
         {
@@ -496,6 +531,23 @@ def _report_inputs_payload(
         for index, slot in enumerate(IMAGE_SLOTS, start=1)
     )
     steps = ["business_metrics", "profile_figures", "report_inputs"]
+    inputs = {
+        "metric_profile": PROFILE_NAME,
+        "metric_input_mode": "product_catalog",
+        "time_slices": [
+            {
+                "scale": "year_range",
+                "start_year": spec.start_year,
+                "end_year": spec.end_year,
+                "label": f"{spec.start_year}-{spec.end_year}",
+            }
+        ],
+        "region_name": spec.region_name,
+    }
+    if request_set_id is not None:
+        inputs["request_set_id"] = request_set_id
+    if request_set_manifest is not None:
+        inputs["request_set_manifest"] = str(request_set_manifest)
     return {
         "schema_version": 1,
         "task": {
@@ -503,19 +555,7 @@ def _report_inputs_payload(
             "status": "success",
             "output_root": str(spec.output_root),
         },
-        "inputs": {
-            "metric_profile": PROFILE_NAME,
-            "metric_input_mode": "product_catalog",
-            "time_slices": [
-                {
-                    "scale": "year_range",
-                    "start_year": spec.start_year,
-                    "end_year": spec.end_year,
-                    "label": f"{spec.start_year}-{spec.end_year}",
-                }
-            ],
-            "region_name": spec.region_name,
-        },
+        "inputs": inputs,
         "artifacts": artifacts,
         "runtime": {
             "workflow_steps": steps,

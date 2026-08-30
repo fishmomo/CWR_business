@@ -57,6 +57,52 @@ def write_request_set_manifest(
     path.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
 
 
+def verify_request_set_manifest_paths(output_root: Path) -> None:
+    manifest_path = output_root / "report_inputs" / "request_set_manifest.json"
+    payload = json.loads(manifest_path.read_text(encoding="utf-8"))
+    referenced = [member["manifest"] for member in payload["members"]]
+    referenced.append(payload["product_report_inputs"])
+    for value in referenced:
+        path = Path(value)
+        if not path.is_absolute():
+            path = output_root / path
+        if not path.exists():
+            raise FileNotFoundError(f"Missing request-set manifest reference: {path}")
+
+
+def rebase_request_set_outputs(
+    staged_output: Path,
+    final_output: Path,
+    *,
+    member_roles: tuple[str, ...] = ("annual", "monthly"),
+) -> None:
+    paths = [
+        staged_output / "report_inputs" / "request_set_manifest.json",
+        staged_output / "mask" / "mask_bundle.json",
+    ]
+    paths.extend(
+        staged_output
+        / "standard_requests"
+        / role
+        / "report_inputs"
+        / "request_manifest.json"
+        for role in member_roles
+    )
+    for path in paths:
+        rebase_json_file(path, staged_output, final_output)
+
+
+def rebase_json_file(path: Path, source_root: Path, target_root: Path) -> None:
+    if not path.is_file():
+        return
+    payload = json.loads(path.read_text(encoding="utf-8"))
+    payload = rebase_paths(payload, source_root, target_root)
+    path.write_text(
+        json.dumps(payload, ensure_ascii=False, indent=2),
+        encoding="utf-8",
+    )
+
+
 def rebase_paths(value: Any, source_root: Path, target_root: Path) -> Any:
     if isinstance(value, dict):
         return {

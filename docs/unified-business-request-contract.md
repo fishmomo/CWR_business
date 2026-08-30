@@ -153,7 +153,8 @@ of these combinations:
 
 Figure `params` use the standard plot contract. Multiple selected periods are
 preserved in NetCDF as a `period` dimension. A single selected period retains
-the compatible two-dimensional `lat × lon` structure.
+the compatible two-dimensional `lat × lon` structure. Standard gridded results
+are written as NetCDF4/HDF5 through `h5netcdf`.
 
 Every successful run also writes
 `report_inputs/request_manifest.json`, which indexes the generated artifacts

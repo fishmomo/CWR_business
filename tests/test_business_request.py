@@ -219,7 +219,7 @@ def test_cli_executes_business_request_and_preserves_grid_periods(
         ["2025-02", "temp", "max", "8.00"],
     ]
 
-    grid = xr.load_dataset(output_root / "export" / "gridded.nc", engine="scipy")
+    grid = xr.load_dataset(output_root / "export" / "gridded.nc", engine="h5netcdf")
     assert list(grid["period"].values) == ["2025-01", "2025-02"]
     assert grid["temp_mean"].dims == ("period", "lat", "lon")
     assert set(grid.data_vars) == {

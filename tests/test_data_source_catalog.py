@@ -158,7 +158,7 @@ def test_catalog_loads_only_requested_files_and_normalizes_coordinates(
 
     grid = xr.load_dataset(
         tmp_path / "result" / "export" / "monthly_grid.nc",
-        engine="scipy",
+        engine="h5netcdf",
     )
     assert list(grid.dims) == ["period", "lat", "lon"]
     assert list(grid["period"].values) == ["2025-01", "2025-02"]

@@ -77,6 +77,12 @@ conda run -n cwr_py312 cwr-engine --request examples/requests/nmg-zxb-cloud-wate
 conda run -n cwr_py312 cwr-engine --workflow-spec examples/workflows/nmg-zxb-cloud-water-multi-year-2021-2025.json
 ```
 
+多年报告统一请求集使用同一数据源和必要区域驱动年度、月度标准结果及专题报告：
+
+```powershell
+conda run -n cwr_py312 cwr-engine --request examples/requests/nmg-zxb-cloud-water-multi-year-2021-2025.json
+```
+
 ## 仓库数据
 
 - `data/inputs/`：纳入版本管理的代表性输入数据。

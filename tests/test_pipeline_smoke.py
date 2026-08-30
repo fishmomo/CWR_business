@@ -211,7 +211,7 @@ def test_grid_nc_request_exports_masked_grid(tmp_path: Path):
         workflow_steps=["prepare", "mask", "subset", "transform", "export"],
     )
     root = run_task(task_path, tmp_path / "result")
-    dataset = xr.load_dataset(root / "export" / "annual_grid.nc", engine="scipy")
+    dataset = xr.load_dataset(root / "export" / "annual_grid.nc", engine="h5netcdf")
     assert list(dataset.data_vars) == ["temp"]
     assert dataset["temp"].dims == ("lat", "lon")
 
@@ -300,7 +300,7 @@ def test_multiple_operators_grid_nc_names_each_result(tmp_path: Path):
         operators=["mean", "max"],
     )
     root = run_task(task_path, tmp_path / "result")
-    dataset = xr.load_dataset(root / "export" / "annual_grids.nc", engine="scipy")
+    dataset = xr.load_dataset(root / "export" / "annual_grids.nc", engine="h5netcdf")
     assert set(dataset.data_vars) == {
         "temp_mean",
         "temp_max",
@@ -328,7 +328,7 @@ def test_multiple_time_slices_grid_nc_preserves_each_period(tmp_path: Path):
     root = run_task(task_path, tmp_path / "result")
     dataset = xr.load_dataset(
         root / "export" / "monthly_grids.nc",
-        engine="scipy",
+        engine="h5netcdf",
     )
     assert list(dataset["period"].values) == ["2025-01", "2025-02"]
     assert dataset["temp"].dims == ("period", "lat", "lon")
@@ -370,7 +370,7 @@ def test_multiple_variables_grid_nc_contains_all_requested_variables(tmp_path: P
         workflow_steps=["prepare", "mask", "subset", "transform", "export"],
     )
     root = run_task(task_path, tmp_path / "result")
-    dataset = xr.load_dataset(root / "export" / "annual_grids.nc", engine="scipy")
+    dataset = xr.load_dataset(root / "export" / "annual_grids.nc", engine="h5netcdf")
     assert set(dataset.data_vars) == {"temp", "precip"}
 
 

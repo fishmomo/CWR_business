@@ -52,7 +52,7 @@ def run(context: dict) -> dict:
                 grid_data.attrs["source_variable"] = result["source_key"]
                 grid_variables[output_name] = grid_data
         grid_dataset = xr.Dataset(grid_variables)
-        grid_dataset.to_netcdf(target, engine="scipy")
+        grid_dataset.to_netcdf(target, engine="h5netcdf")
         context["artifacts"].append(
             {
                 "kind": "grid_nc",

@@ -15,7 +15,9 @@ from cwr_engine.workflows.cloud_water_multi_year import (
 )
 from cwr_engine.workflows.cloud_water_single_year_request import (
     build_cloud_water_single_year_request_set,
-    load_request_set,
+)
+from cwr_engine.workflows.cloud_water_multi_year_request import (
+    build_cloud_water_multi_year_request_set,
 )
 
 
@@ -31,10 +33,16 @@ def main(argv: list[str] | None = None) -> int:
     if args.request:
         request_path = Path(args.request)
         request_payload = json.loads(request_path.read_text(encoding="utf-8"))
-        if request_payload.get("request_set"):
+        request_set = request_payload.get("request_set")
+        if request_set:
             if args.output_root:
                 parser.error("--output-root cannot be used with request sets")
-            output = build_cloud_water_single_year_request_set(request_path)
+            if request_set == "cloud_water_single_year":
+                output = build_cloud_water_single_year_request_set(request_path)
+            elif request_set == "cloud_water_multi_year":
+                output = build_cloud_water_multi_year_request_set(request_path)
+            else:
+                parser.error(f"Unsupported request set: {request_set}")
         else:
             output = run_business_request(
                 request_path,

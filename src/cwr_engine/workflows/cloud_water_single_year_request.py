@@ -42,7 +42,8 @@ from cwr_engine.steps.mask import _derive_bounds, compile_shp_mask
 from cwr_engine.workflows.cloud_water_shared import (
     finalize_report_inputs,
     publish_directory,
-    rebase_paths,
+    rebase_request_set_outputs,
+    verify_request_set_manifest_paths,
     write_request_set_manifest,
 )
 from cwr_report.profiles.cloud_water_single_year import (
@@ -179,11 +180,8 @@ def build_cloud_water_single_year_request_set(spec_path: Path) -> Path:
         )
         build_cloud_water_single_year_report(profile_spec_path)
 
-        _verify_manifest_paths(staged_output_root)
-        _rebase_request_set_manifest(request_set_manifest_path, staged_output_root, spec.output_root)
-        _rebase_member_manifests(staged_output_root, spec.output_root)
-        _rebase_json_file(
-            staged_output_root / "mask" / "mask_bundle.json",
+        verify_request_set_manifest_paths(staged_output_root)
+        rebase_request_set_outputs(
             staged_output_root,
             spec.output_root,
         )
@@ -590,72 +588,4 @@ def _run_standard_request(
         mask_data=mask,
         mask_bundle=mask_bundle,
         output_root=output_root,
-    )
-
-
-def _verify_manifest_paths(output_root: Path) -> None:
-    request_set_manifest = output_root / "report_inputs" / "request_set_manifest.json"
-    payload = json.loads(request_set_manifest.read_text(encoding="utf-8"))
-    for member in payload["members"]:
-        manifest_path = Path(member["manifest"])
-        if not manifest_path.is_absolute():
-            manifest_path = output_root / manifest_path
-        if not manifest_path.exists():
-            raise FileNotFoundError(f"Missing member manifest: {manifest_path}")
-    product_path = Path(payload["product_report_inputs"])
-    if not product_path.is_absolute():
-        product_path = output_root / product_path
-    if not product_path.exists():
-        raise FileNotFoundError(f"Missing product report inputs: {product_path}")
-
-
-def _rebase_request_set_manifest(
-    path: Path,
-    staged_output: Path,
-    final_output: Path,
-) -> None:
-    payload = json.loads(path.read_text(encoding="utf-8"))
-    payload["members"] = [
-        {
-            **member,
-            "manifest": _rebase_path(member["manifest"], staged_output, final_output),
-        }
-        for member in payload["members"]
-    ]
-    payload["product_report_inputs"] = _rebase_path(
-        payload["product_report_inputs"], staged_output, final_output
-    )
-    path.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
-
-
-def _rebase_path(value: str, staged_output: Path, final_output: Path) -> str:
-    return rebase_paths(value, staged_output, final_output)
-
-
-def _rebase_member_manifests(staged_output: Path, final_output: Path) -> None:
-    for role in ("annual", "monthly"):
-        manifest_path = (
-            staged_output
-            / "standard_requests"
-            / role
-            / "report_inputs"
-            / "request_manifest.json"
-        )
-        if manifest_path.is_file():
-            payload = json.loads(manifest_path.read_text(encoding="utf-8"))
-            payload = rebase_paths(payload, staged_output, final_output)
-            manifest_path.write_text(
-                json.dumps(payload, ensure_ascii=False, indent=2),
-                encoding="utf-8",
-            )
-
-
-def _rebase_json_file(path: Path, staged_output: Path, final_output: Path) -> None:
-    if not path.is_file():
-        return
-    payload = json.loads(path.read_text(encoding="utf-8"))
-    payload = rebase_paths(payload, staged_output, final_output)
-    path.write_text(
-        json.dumps(payload, ensure_ascii=False, indent=2),
-        encoding="utf-8",
     )
