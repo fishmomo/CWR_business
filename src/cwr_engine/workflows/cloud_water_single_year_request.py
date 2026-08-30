@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import date
 import json
 from pathlib import Path
 import tempfile
@@ -16,11 +15,6 @@ from cwr_engine.business_metrics.cloud_water import (
     build_cloud_water_metrics,
     write_cloud_water_business_metrics,
 )
-from cwr_engine.business_metrics.cloud_water_config import (
-    existing_file,
-    required_text,
-    resolve_path,
-)
 from cwr_engine.business_metrics.cloud_water_core import (
     CloudWaterYearResult,
     PreparedCloudWaterYear,
@@ -32,13 +26,23 @@ from cwr_engine.business_request import (
     compile_business_request,
     parse_business_request,
 )
-from cwr_engine.cache import build_mask_signature
 from cwr_engine.data_sources.netcdf import PreparedNetcdfSource
 from cwr_engine.models.region import MaskBundle
 from cwr_engine.models.task import EngineTask
-from cwr_engine.pipeline import run_engine_task_from_prepared
-from cwr_engine.registries.variables import build_variable_registry
-from cwr_engine.steps.mask import _derive_bounds, compile_shp_mask
+from cwr_engine.workflows.cloud_water_request_contract import (
+    REQUEST_SET_SCHEMA_VERSION,
+    merge_request_member,
+    prepared_source,
+    product_source_from_data_source,
+    region_spec_from_task,
+    resolve_path,
+    resolve_request_product,
+    run_standard_request,
+    validate_request_members,
+    validate_request_set_header,
+    validate_shared_request,
+    write_mask_bundle,
+)
 from cwr_engine.workflows.cloud_water_shared import (
     finalize_report_inputs,
     publish_directory,
@@ -53,7 +57,6 @@ from cwr_report.profiles.cloud_water_single_year import (
 from cwr_report.profiles.cloud_water_shared import image_width_overrides
 
 
-REQUEST_SET_SCHEMA_VERSION = 1
 REQUEST_SET_NAME = "cloud_water_single_year"
 
 
@@ -100,7 +103,7 @@ def build_cloud_water_single_year_request_set(spec_path: Path) -> Path:
             staged_output_root,
         )
 
-        annual_manifest = _run_standard_request(
+        annual_manifest = run_standard_request(
             annual_engine_task,
             spec_path,
             prepared.annual_prepared.dataset,
@@ -108,7 +111,7 @@ def build_cloud_water_single_year_request_set(spec_path: Path) -> Path:
             prepared.mask_bundle,
             staged_output_root / "standard_requests" / "annual",
         )
-        monthly_manifest = _run_standard_request(
+        monthly_manifest = run_standard_request(
             monthly_engine_task,
             spec_path,
             prepared.monthly_prepared.dataset,
@@ -200,20 +203,20 @@ def build_cloud_water_single_year_request_set(spec_path: Path) -> Path:
 def load_request_set(path: Path) -> CloudWaterSingleYearRequestSet:
     payload = json.loads(path.read_text(encoding="utf-8"))
     base = path.parent
-    _validate_request_set_payload(payload, base)
+    validate_request_set_header(payload, REQUEST_SET_NAME)
+    shared = validate_shared_request(payload["shared_request"])
+    requests = validate_request_members(payload["requests"])
+    year = _validate_annual_period(requests["annual"])
+    _validate_monthly_period(requests["monthly"], year)
+    product = resolve_request_product(payload["product"], base, IMAGE_SLOTS)
 
-    shared = payload["shared_request"]
-    product = _resolve_product(payload["product"], base)
-
-    annual_payload = _merge_member(shared, payload["requests"]["annual"], "annual")
-    monthly_payload = _merge_member(shared, payload["requests"]["monthly"], "monthly")
+    annual_payload = merge_request_member(shared, requests["annual"])
+    monthly_payload = merge_request_member(shared, requests["monthly"])
 
     annual_request = parse_business_request(annual_payload)
     monthly_request = parse_business_request(monthly_payload)
 
-    output_root = resolve_path(base, payload, "output_root")
-
-    year = annual_request.period["years"][0]
+    output_root = resolve_path(payload["output_root"], base, "output_root")
 
     return CloudWaterSingleYearRequestSet(
         request_set_id=payload["request_set_id"],
@@ -224,66 +227,6 @@ def load_request_set(path: Path) -> CloudWaterSingleYearRequestSet:
         product=product,
         output_root=output_root,
     )
-
-
-def _validate_request_set_payload(payload: dict[str, Any], base: Path) -> None:
-    allowed = {
-        "schema_version",
-        "request_set",
-        "request_set_id",
-        "shared_request",
-        "requests",
-        "product",
-        "output_root",
-    }
-    unknown = sorted(set(payload) - allowed)
-    if unknown:
-        raise ValueError(f"Unsupported request set field: {unknown[0]}")
-
-    if payload.get("schema_version") != REQUEST_SET_SCHEMA_VERSION:
-        raise ValueError(f"schema_version must be {REQUEST_SET_SCHEMA_VERSION}")
-    if payload.get("request_set") != REQUEST_SET_NAME:
-        raise ValueError(f"request_set must be {REQUEST_SET_NAME}")
-
-    request_set_id = payload.get("request_set_id")
-    if (
-        not isinstance(request_set_id, str)
-        or not request_set_id.strip()
-    ):
-        raise ValueError("request_set_id must be a non-empty string")
-
-    shared = payload.get("shared_request")
-    if not isinstance(shared, dict):
-        raise ValueError("shared_request must be an object")
-    _validate_known_fields(shared, {"data_source", "region"}, "shared_request")
-    if "data_source" not in shared or "region" not in shared:
-        raise ValueError("shared_request must contain data_source and region")
-
-    _validate_data_source(shared["data_source"])
-    _validate_region(shared["region"])
-
-    requests = payload.get("requests")
-    if not isinstance(requests, dict):
-        raise ValueError("requests must be an object")
-    if set(requests) != {"annual", "monthly"}:
-        raise ValueError("requests must contain exactly annual and monthly")
-
-    _validate_member(requests["annual"], "annual")
-    _validate_member(requests["monthly"], "monthly")
-
-    year = _validate_annual_period(requests["annual"])
-    _validate_monthly_period(requests["monthly"], year)
-
-    product = payload.get("product")
-    if not isinstance(product, dict):
-        raise ValueError("product must be an object")
-    _validate_known_fields(
-        product,
-        {"region_name", "template", "report_filename", "image_width_inches", "image_widths_inches"},
-        "product",
-    )
-    _validate_product(product, base)
-
 
 def _validate_annual_period(member: dict[str, Any]) -> int:
     period = member.get("period")
@@ -316,112 +259,6 @@ def _validate_monthly_period(member: dict[str, Any], year: int) -> None:
         )
 
 
-def _resolve_product(product: dict[str, Any], base: Path) -> dict[str, Any]:
-    """Resolve and normalize product fields. Returns a new dict with resolved paths/defaults."""
-    required = {"region_name", "template", "report_filename"}
-    missing = sorted(required - set(product))
-    if missing:
-        raise ValueError(f"product missing {missing[0]}")
-
-    template = Path(product["template"])
-    template = template if template.is_absolute() else (base / template).resolve()
-    if not template.is_file():
-        raise ValueError(f"template does not exist: {template}")
-
-    report_filename = product["report_filename"]
-    if (
-        not isinstance(report_filename, str)
-        or not report_filename.strip()
-        or Path(report_filename).name != report_filename
-        or Path(report_filename).suffix.lower() != ".docx"
-    ):
-        raise ValueError("report_filename must be a .docx filename")
-
-    width = product.get("image_width_inches", 4.0)
-    if (
-        not isinstance(width, (int, float))
-        or isinstance(width, bool)
-        or width <= 0
-    ):
-        raise ValueError("image_width_inches must be positive")
-
-    image_widths_inches = product.get("image_widths_inches", {})
-    if not isinstance(image_widths_inches, dict):
-        raise ValueError("image_widths_inches must be an object")
-    for key, value in image_widths_inches.items():
-        if not isinstance(value, (int, float)) or isinstance(value, bool) or value <= 0:
-            raise ValueError(f"image_widths_inches.{key} must be positive")
-
-    # Build a normalized copy with resolved template path and default widths
-    resolved = dict(product)
-    resolved["template"] = str(template)
-    resolved.setdefault("image_width_inches", 4.0)
-    resolved.setdefault("image_widths_inches", {})
-    return resolved
-
-
-def _validate_product(product: dict[str, Any], base: Path) -> None:
-    # _resolve_product performs all validation; result is discarded here
-    _resolve_product(product, base)
-
-
-def _validate_known_fields(payload: dict[str, Any], allowed: set[str], context: str) -> None:
-    """Reject unknown fields in a nested object."""
-    unknown = sorted(set(payload) - allowed)
-    if unknown:
-        raise ValueError(f"{unknown[0]} is not a recognized field in {context}")
-
-
-def _validate_data_source(data_source: dict[str, Any]) -> None:
-    if not isinstance(data_source, dict):
-        raise ValueError("shared_request.data_source must be an object")
-    _validate_known_fields(
-        data_source,
-        {"kind", "root", "engine", "coordinate_map", "variable_map"},
-        "shared_request.data_source",
-    )
-
-
-def _validate_region(region: dict[str, Any]) -> None:
-    if not isinstance(region, dict):
-        raise ValueError("shared_request.region must be an object")
-    if "kind" not in region:
-        raise ValueError("shared_request.region must contain 'kind'")
-    kind = region["kind"]
-    if kind not in {"shp", "existing_mask", "bbox"}:
-        raise ValueError(f"Unsupported region kind: {kind}")
-
-
-def _validate_member(member: dict[str, Any], role: str) -> None:
-    if not isinstance(member, dict):
-        raise ValueError(f"requests.{role} must be an object")
-    _validate_known_fields(
-        member,
-        {"request_id", "period", "variables", "operators", "results"},
-        f"requests.{role}",
-    )
-
-
-def _merge_member(
-    shared: dict[str, Any],
-    member: dict[str, Any],
-    role: str,
-) -> dict[str, Any]:
-    merged = {
-        "schema_version": REQUEST_SET_SCHEMA_VERSION,
-        "request_id": member["request_id"],
-        "data_source": shared["data_source"],
-        "region": shared["region"],
-        "period": member["period"],
-        "variables": member["variables"],
-        "operators": member["operators"],
-        "results": member["results"],
-    }
-    if role == "monthly":
-        merged["request_id"] = member["request_id"]
-    return merged
-
-
 @dataclass(frozen=True)
 class _PreparedInputs:
     annual_prepared: PreparedNetcdfSource
@@ -443,8 +280,8 @@ def _prepare_cloud_water_year_inputs(
     base: Path,
     staged_output_root: Path,
 ) -> _PreparedInputs:
-    product_source = _data_source_to_product_source(annual_task.data_source, base)
-    region_spec = _region_spec_to_cloud_water_format(annual_task.region_spec)
+    product_source = product_source_from_data_source(annual_task.data_source, base)
+    region_spec = region_spec_from_task(annual_task)
 
     cloud_water_prepared = prepare_cloud_water_year(
         product_source, region_spec, year
@@ -454,65 +291,18 @@ def _prepare_cloud_water_year_inputs(
         cloud_water_prepared.monthly_datasets, year
     )
 
-    lat_values = annual_dataset["lat"].values
-    lon_values = annual_dataset["lon"].values
     mask = cloud_water_prepared.mask
+    mask_bundle = write_mask_bundle(mask, region_spec, staged_output_root)
 
-    grid_definition = {
-        "lat": "lat",
-        "lon": "lon",
-        "shape": [int(mask.sizes["lat"]), int(mask.sizes["lon"])],
-    }
-    spatial_bounds = _derive_bounds(mask)
-    signature = build_mask_signature(
-        {"kind": region_spec["kind"], "payload": region_spec["payload"]},
-        grid_definition,
+    annual_prepared = prepared_source(
+        _annual_with_time(annual_dataset, year),
+        [cloud_water_prepared.annual_path],
+        "year",
     )
-
-    mask_dir = staged_output_root / "mask"
-    mask_dir.mkdir(parents=True, exist_ok=True)
-    mask_bundle_path = mask_dir / "mask_bundle.json"
-    mask_bundle = MaskBundle(
-        mask_path=str(mask_bundle_path),
-        preview_path=str(mask_dir / "mask_preview.png"),
-        grid_definition=grid_definition,
-        spatial_bounds=spatial_bounds,
-        signature=signature,
-    )
-    mask_bundle_path.write_text(
-        json.dumps(
-            {
-                "mask_path": mask_bundle.mask_path,
-                "preview_path": mask_bundle.preview_path,
-                "grid_definition": mask_bundle.grid_definition,
-                "spatial_bounds": mask_bundle.spatial_bounds,
-                "signature": mask_bundle.signature,
-            },
-            indent=2,
-            ensure_ascii=False,
-        ),
-        encoding="utf-8",
-    )
-
-    annual_prepared = PreparedNetcdfSource(
-        dataset=_annual_with_time(annual_dataset, year),
-        trace={
-            "file_count": 1,
-            "first_file": str(cloud_water_prepared.annual_path),
-            "last_file": str(cloud_water_prepared.annual_path),
-            "time_scale": "year",
-        },
-        files=[cloud_water_prepared.annual_path],
-    )
-    monthly_prepared = PreparedNetcdfSource(
-        dataset=monthly_dataset,
-        trace={
-            "file_count": 12,
-            "first_file": str(cloud_water_prepared.monthly_paths[1]),
-            "last_file": str(cloud_water_prepared.monthly_paths[12]),
-            "time_scale": "month",
-        },
-        files=[cloud_water_prepared.monthly_paths[m] for m in range(1, 13)],
+    monthly_prepared = prepared_source(
+        monthly_dataset,
+        [cloud_water_prepared.monthly_paths[m] for m in range(1, 13)],
+        "month",
     )
 
     return _PreparedInputs(
@@ -550,42 +340,3 @@ def _annual_with_time(annual_dataset: xr.Dataset, year: int) -> xr.Dataset:
     dataset = annual_dataset.expand_dims("time")
     dates = np.array([f"{year}-01-01"], dtype="datetime64")
     return dataset.assign_coords(time=dates)
-
-
-def _data_source_to_product_source(
-    data_source: dict[str, Any],
-    base: Path,
-) -> dict[str, Any]:
-    root = Path(data_source["root"])
-    product_source = {
-        "root": root if root.is_absolute() else (base / root).resolve(),
-    }
-    # Note: 'pattern' is intentionally excluded — product discovery uses
-    # hardcoded annual_pattern/monthly_pattern and ignores this field.
-    for key in ("engine", "coordinate_map", "variable_map"):
-        if key in data_source:
-            product_source[key] = data_source[key]
-    return product_source
-
-
-def _region_spec_to_cloud_water_format(region_spec) -> dict[str, Any]:
-    payload = dict(region_spec.payload)
-    return {"kind": region_spec.kind, "payload": payload}
-
-
-def _run_standard_request(
-    task: EngineTask,
-    task_path: Path,
-    prepared_dataset: xr.Dataset,
-    mask: xr.DataArray,
-    mask_bundle: MaskBundle,
-    output_root: Path,
-) -> Path:
-    return run_engine_task_from_prepared(
-        task=task,
-        task_path=task_path,
-        prepared_dataset=prepared_dataset,
-        mask_data=mask,
-        mask_bundle=mask_bundle,
-        output_root=output_root,
-    )

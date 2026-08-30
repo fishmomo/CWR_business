@@ -924,9 +924,9 @@ invalid unlimited-dimension header. Synthetic tests cover protocol validation,
 DOCX failure, publish failure, and staging-path cleanup. The full suite passes
 with 132 tests in `cwr_py312`.
 
-## Next planned stage: request-set contract consolidation
+## Completed stage: request-set contract consolidation
 
-Status: planned, not active.
+Status: completed on 2026-08-30.
 
 ### Outcome
 
@@ -937,6 +937,52 @@ retained `--workflow-spec` entrypoints without removing them in that stage.
 
 ### Boundary
 
-This is a maintenance-only candidate stage. It must not change formulas,
-statistics, figures, templates, JSON/NetCDF contents, report wording, or user
-period semantics. Activation requires a separate scope decision.
+This was a maintenance-only stage. It did not change formulas, statistics,
+figures, templates, JSON/NetCDF contents, report wording, or user period
+semantics.
+
+### Acceptance
+
+- Common request-set header, shared-input, member, product, prepared-source,
+  region, mask-bundle, and standard-request behavior is implemented once in
+  `cloud_water_request_contract.py`.
+- Single-year and multi-year modules retain only their distinct period rules,
+  preparation loops, thematic derivation, and report assembly.
+- The authoritative `--request` entrypoints and retained `--workflow-spec`
+  compatibility entrypoints remain available.
+- The single-year and multi-year request-set tests pass with unchanged
+  transaction, loading, mask, and failure behavior.
+- Real 2025 and 2021-2025 request runs reproduce all accepted metrics, spatial
+  NetCDF, figures, and DOCX OOXML parts.
+- The full suite passes with 135 tests in `cwr_py312`.
+
+### Stop condition
+
+The stage stops after the shared contract, direct contract tests, full
+regression, real single-year and multi-year acceptance, compatibility policy,
+and one independent commit are complete. No new thematic product is added in
+this stage.
+
+The acceptance checks pass. Shared contract behavior now has three direct
+tests, while the existing 44 single-year and multi-year request-set tests remain
+unchanged. Real acceptance produced five single-year and six multi-year figures,
+one report for each workflow, and no staging references in formal JSON. Metrics,
+spatial NetCDF, and figures are byte-identical to their accepted compatibility
+baselines; every DOCX OOXML part is also identical.
+
+## Next planned stage: second thematic product request integration
+
+Status: planned, not active.
+
+### Outcome
+
+Select one additional existing business workflow and connect it to the shared
+business request and request-set contracts as a vertical-slice proof that the
+engine supports products beyond the accepted cloud-water reports.
+
+### Boundary
+
+The product must be selected and its existing formulas, inputs, figures,
+template, and acceptance baseline frozen before activation. The stage may add
+only the thin product adapter and required contract extensions; it must not
+fork discovery, mask, standard calculation, or plotting infrastructure.
