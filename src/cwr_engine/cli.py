@@ -19,6 +19,9 @@ from cwr_engine.workflows.cloud_water_single_year_request import (
 from cwr_engine.workflows.cloud_water_multi_year_request import (
     build_cloud_water_multi_year_request_set,
 )
+from cwr_engine.workflows.daily_precipitation_request import (
+    build_daily_precipitation_request_set,
+)
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -41,6 +44,8 @@ def main(argv: list[str] | None = None) -> int:
                 output = build_cloud_water_single_year_request_set(request_path)
             elif request_set == "cloud_water_multi_year":
                 output = build_cloud_water_multi_year_request_set(request_path)
+            elif request_set == "daily_precipitation_analysis":
+                output = build_daily_precipitation_request_set(request_path)
             else:
                 parser.error(f"Unsupported request set: {request_set}")
         else:

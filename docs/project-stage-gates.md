@@ -970,19 +970,67 @@ one report for each workflow, and no staging references in formal JSON. Metrics,
 spatial NetCDF, and figures are byte-identical to their accepted compatibility
 baselines; every DOCX OOXML part is also identical.
 
-## Next planned stage: second thematic product request integration
+## Completed stage: second thematic product request integration
+
+Status: completed on 2026-08-30.
+
+### Outcome
+
+Connect the retained daily precipitation and precipitation-class analysis to
+the shared business request and request-set contracts as a vertical-slice proof
+that the engine supports products beyond the accepted cloud-water reports.
+
+### Boundary
+
+The stage adds only the thin daily-precipitation adapter and required shared
+preparation extension. It does not fork discovery, mask, standard calculation,
+or plotting infrastructure, and it does not add a DOCX report, new
+precipitation classes, formulas, resampling, scheduling, caching, GUI, or Web
+UI.
+
+### Acceptance
+
+- One strict request declares one continuous daily period within a calendar
+  year, the mandatory region, `Ps/GMh/CWR`, standard outputs, and thematic
+  output naming.
+- The shared source preparation loads each daily product once, compiles one
+  mask, and exposes the auxiliary `dxy` field without making it a user physical
+  variable.
+- Synthetic tests cover formulas, class boundaries, protocol failures, missing
+  days, one-load/one-mask behavior, staging cleanup, and transactional publish
+  failure.
+- The real 2025 request reads 365 products and produces the standard result,
+  daily table, class summary, class NetCDF, three figures, and unified
+  manifests.
+- The full suite passes with 141 tests in `cwr_py312`.
+
+### Stop condition
+
+The stage stops after the frozen protocol, implementation, synthetic and real
+acceptance, visual check, full regression, documentation, and one independent
+commit are complete.
+
+The acceptance checks pass. Daily regional precipitation and efficiency match
+the retained 52-cell reference to floating-point precision. The retained class
+artifact used an obsolete 72-cell mask; the new product uses the accepted
+52-cell SHP mask, and all eight class variables are exactly equal on those 52
+common cells. The three figures follow the current 15-16 point text, panel-label,
+title, and colorbar rules. Formal JSON contains no staging paths.
+
+## Next planned stage: thematic product registry
 
 Status: planned, not active.
 
 ### Outcome
 
-Select one additional existing business workflow and connect it to the shared
-business request and request-set contracts as a vertical-slice proof that the
-engine supports products beyond the accepted cloud-water reports.
+Replace hard-coded request-set dispatch in the CLI with a small explicit
+registry that declares each thematic product's loader, builder, protocol name,
+and capabilities. This is a maintenance stage to make future product adapters
+additive without introducing a plugin platform.
 
 ### Boundary
 
-The product must be selected and its existing formulas, inputs, figures,
-template, and acceptance baseline frozen before activation. The stage may add
-only the thin product adapter and required contract extensions; it must not
-fork discovery, mask, standard calculation, or plotting infrastructure.
+The registry must preserve every current command and artifact. It may not
+change product formulas, protocols, figures, reports, or compatibility
+entrypoints, and it must stop after registry dispatch and regression coverage
+are complete.

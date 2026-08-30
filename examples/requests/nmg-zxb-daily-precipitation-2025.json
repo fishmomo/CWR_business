@@ -1,0 +1,36 @@
+{
+  "schema_version": 1,
+  "request_set": "daily_precipitation_analysis",
+  "request_set_id": "nmg-zxb-daily-precipitation-2025",
+  "shared_request": {
+    "data_source": {
+      "kind": "netcdf",
+      "root": "H:\\NCEP_fixed\\2025\\p2_as_matlab",
+      "engine": "h5netcdf"
+    },
+    "region": {
+      "kind": "shp",
+      "path": "../../data/inputs/内蒙古中西部/内蒙古中西部_7盟市融合研究区.shp"
+    }
+  },
+  "requests": {
+    "daily": {
+      "request_id": "nmg-zxb-daily-precipitation-standard-2025",
+      "period": {
+        "scale": "day",
+        "date_range": ["2025-01-01", "2025-12-31"]
+      },
+      "variables": ["Ps", "GMh", "CWR"],
+      "operators": ["sum"],
+      "results": [
+        {"scope": "region", "format": "csv", "name": "daily_regional"},
+        {"scope": "grid", "format": "netcdf", "name": "daily_grids"}
+      ]
+    }
+  },
+  "product": {
+    "region_name": "内蒙古中西部七盟市研究区",
+    "output_prefix": "nmg-zxb_2025"
+  },
+  "output_root": "../../artifacts/runs/nmg-zxb-daily-precipitation-2025"
+}

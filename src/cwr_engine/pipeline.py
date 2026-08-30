@@ -1,6 +1,9 @@
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
+from cwr_engine.data_sources.netcdf import PreparedNetcdfSource, prepare_netcdf_source
+from cwr_engine.models.region import MaskBundle
 from cwr_engine.registries.operators import build_operator_registry
 from cwr_engine.registries.plots import build_plot_registry
 from cwr_engine.registries.variables import build_variable_registry
@@ -29,6 +32,54 @@ STEP_RUNNERS = {
     "plot": plot.run,
     "export": export.run,
 }
+
+
+@dataclass(frozen=True)
+class PreparedEngineInputs:
+    source: PreparedNetcdfSource
+    mask_data: Any
+    mask_bundle: MaskBundle
+
+
+def prepare_engine_task_inputs(
+    task,
+    task_path: Path,
+    output_root: Path,
+    *,
+    additional_source_variables: list[str] | None = None,
+) -> PreparedEngineInputs:
+    """Discover, load, normalize and mask a task once for shared consumers."""
+
+    variable_registry = build_variable_registry()
+    operator_registry = build_operator_registry()
+    plot_registry = build_plot_registry()
+    _validate_output_requests(task)
+    _validate_variables(task, variable_registry)
+    _validate_operators(task, operator_registry)
+    _validate_time_scales(task, variable_registry, operator_registry)
+    validate_plot_requests(task, plot_registry)
+    prepared = prepare_netcdf_source(
+        source=task.data_source,
+        time_slices=task.time_slices,
+        variables=task.variables,
+        variable_registry=variable_registry,
+        task_path=task_path,
+        additional_source_variables=additional_source_variables,
+    )
+    (output_root / "mask").mkdir(parents=True, exist_ok=True)
+    context = {
+        "task": task,
+        "task_path": task_path,
+        "output_root": output_root,
+        "prepared_dataset": prepared.dataset,
+        "runtime": {"executed_steps": []},
+    }
+    context = mask.run(context)
+    return PreparedEngineInputs(
+        source=prepared,
+        mask_data=context["mask_data"],
+        mask_bundle=context["mask_bundle"],
+    )
 
 
 def _validate_output_requests(task) -> None:

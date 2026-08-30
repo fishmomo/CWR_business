@@ -113,10 +113,24 @@ def validate_request_members(
     *,
     unknown_message: str = "{field} is not a recognized field in {context}",
 ) -> dict[str, dict[str, Any]]:
+    return validate_named_request_members(
+        requests,
+        ("annual", "monthly"),
+        unknown_message=unknown_message,
+    )
+
+
+def validate_named_request_members(
+    requests: Any,
+    roles: tuple[str, ...],
+    *,
+    unknown_message: str = "{field} is not a recognized field in {context}",
+) -> dict[str, dict[str, Any]]:
     request_members = require_object(requests, "requests")
-    if set(request_members) != {"annual", "monthly"}:
-        raise ValueError("requests must contain exactly annual and monthly")
-    for role in ("annual", "monthly"):
+    if set(request_members) != set(roles):
+        expected = " and ".join(roles)
+        raise ValueError(f"requests must contain exactly {expected}")
+    for role in roles:
         member = require_object(request_members[role], f"requests.{role}")
         reject_unknown_fields(
             member,

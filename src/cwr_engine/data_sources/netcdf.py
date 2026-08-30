@@ -27,6 +27,17 @@ class PreparedNetcdfSource:
     files: list[Path]
 
 
+def ensure_hdf5_backend() -> None:
+    """Load the declared NetCDF4 backend before large product preparation."""
+
+    try:
+        import h5py  # noqa: F401
+    except ImportError as error:
+        raise RuntimeError(
+            "The h5py dependency required for NetCDF4 output is unavailable"
+        ) from error
+
+
 def load_netcdf_source(context: dict) -> tuple[xr.Dataset, dict]:
     task = context["task"]
     source = task.data_source
@@ -46,12 +57,19 @@ def prepare_netcdf_source(
     variables: list[str],
     variable_registry: dict,
     task_path: Path,
+    additional_source_variables: list[str] | None = None,
 ) -> PreparedNetcdfSource:
     root = _resolve_path(source["root"], task_path)
     expected_dates = _expected_dates(time_slices, source["time_scale"])
     files = discover_netcdf_files(root, source, expected_dates)
     datasets = [
-        load_single_netcdf_file(path, source, variable_registry, variables)
+        load_single_netcdf_file(
+            path,
+            source,
+            variable_registry,
+            variables,
+            additional_source_variables,
+        )
         for path in files
     ]
     dataset = _combine_datasets(datasets)
@@ -123,6 +141,7 @@ def load_single_netcdf_file(
     source: dict,
     variable_registry: dict,
     variables: list[str],
+    additional_source_variables: list[str] | None = None,
 ) -> xr.Dataset:
     engine = source.get("engine")
     coordinate_map = source.get("coordinate_map", {})
@@ -132,6 +151,9 @@ def load_single_netcdf_file(
         variable_registry,
         variables,
     )
+    for source_key in additional_source_variables or []:
+        if source_key not in source_keys:
+            source_keys.append(source_key)
     return load_netcdf_file_with_variables(path, engine, source_keys, coordinate_map)
 
 

@@ -86,6 +86,16 @@ conda run -n cwr_py312 cwr-engine --request examples/requests/nmg-zxb-cloud-wate
 单年和多年请求集共享的协议校验、数据准备、mask 元数据及兼容入口政策见
 `docs/cloud-water-request-set-contract-consolidation.md`。
 
+逐日降水专题使用日产品和必要区域生成标准结果、区域降水与效率序列、降水等级
+格点结果、汇总表和三幅专题图：
+
+```powershell
+conda run -n cwr_py312 cwr-engine --request examples/requests/nmg-zxb-daily-precipitation-2025.json
+```
+
+协议、计算口径和正确 mask 的验收差异见
+`docs/daily-precipitation-request-set-protocol.md`。
+
 ## 仓库数据
 
 - `data/inputs/`：纳入版本管理的代表性输入数据。
